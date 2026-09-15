@@ -48,8 +48,8 @@ jobs:
           restore-keys: |
             unity-packagecache-${{ runner.os }}-
 
-      # FAST-only incremental state experiment.
-      # Keep this deliberately small: whole-Library caching previously caused exit 137.
+      # FAST incremental state proven useful by measurements.
+      # BurstCache/JIT is intentionally excluded: warm-run testing showed no benefit.
       - name: Restore FAST incremental cache
         id: unity-fast-incremental-cache
         uses: actions/cache@v4
@@ -59,7 +59,6 @@ jobs:
             Library/ScriptAssemblies
             Library/ArtifactDB
             Library/DataStore
-            Library/BurstCache/JIT
           key: unity-fast-incremental-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-${{ github.sha }}
           restore-keys: |
             unity-fast-incremental-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-
@@ -73,7 +72,7 @@ jobs:
           echo 'Disk:'
           df -h . || true
           echo 'Library directories before Unity:'
-          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB Library/DataStore Library/BurstCache/JIT; do
+          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB Library/DataStore; do
             if [ -e "$d" ]; then du -sh "$d" || true; else echo "MISSING $d"; fi
           done
           echo '================================================='
@@ -94,7 +93,7 @@ jobs:
         run: |
           echo '=== FAST PERFORMANCE DIAGNOSTICS: AFTER UNITY ==='
           echo 'Library directory sizes:'
-          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB Library/DataStore Library/BurstCache/JIT; do
+          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB Library/DataStore; do
             if [ -e "$d" ]; then du -sh "$d" || true; else echo "MISSING $d"; fi
           done
           echo
