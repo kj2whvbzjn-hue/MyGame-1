@@ -1,9 +1,3 @@
 {
-  "assets": [
-    {
-      "key": "automation-test-crystal",
-      "path": "Assets/Art/AutomationTest/AI_Test_Crystal.png",
-      "kind": "sprite"
-    }
-  ]
+  "assets": []
 }
