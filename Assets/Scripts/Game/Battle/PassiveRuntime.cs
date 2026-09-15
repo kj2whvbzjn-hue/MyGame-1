@@ -21,13 +21,21 @@ namespace GuildAdventure.Game.Battle
 
     public static class PassiveRuntime
     {
+        public const int MaxPassiveSlots=5;
+
         public static PassiveCompileResult Compile(IEnumerable<PassiveContribution> equipped)
         {
             var rows=(equipped??Array.Empty<PassiveContribution>()).ToList();
-            var duplicateSeries=rows.Where(x=>!string.IsNullOrWhiteSpace(x.seriesId))
-                .GroupBy(x=>x.seriesId).FirstOrDefault(g=>g.Count()>1);
+            if(rows.Count>MaxPassiveSlots)
+                return Fail("PASSIVE_SLOT_LIMIT_EXCEEDED");
+            if(rows.Any(x=>x==null||string.IsNullOrWhiteSpace(x.passiveId)))
+                return Fail("PASSIVE_ID_MISSING");
+            if(rows.Any(x=>string.IsNullOrWhiteSpace(x.seriesId)))
+                return Fail("PASSIVE_SERIES_ID_MISSING");
+
+            var duplicateSeries=rows.GroupBy(x=>x.seriesId,StringComparer.Ordinal).FirstOrDefault(g=>g.Count()>1);
             if(duplicateSeries!=null)
-                return new PassiveCompileResult{ok=false,reason="PASSIVE_SERIES_DUPLICATE:"+duplicateSeries.Key};
+                return Fail("PASSIVE_SERIES_DUPLICATE:"+duplicateSeries.Key);
 
             var r=new PassiveCompileResult{ok=true,contributions=rows};
             foreach(var x in rows)
@@ -38,5 +46,7 @@ namespace GuildAdventure.Game.Battle
         public static double SumProperty(PassiveCompileResult compiled,string property)
             => compiled==null||!compiled.ok?0:
                compiled.contributions.Where(x=>x.property==property).Sum(x=>x.value);
+
+        static PassiveCompileResult Fail(string reason)=>new PassiveCompileResult{ok=false,reason=reason};
     }
 }
