@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>GK Generic GitHub Uploader</title>
+<style>
+:root{font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1f2937;background:#f3f4f6}
+*{box-sizing:border-box}body{margin:0}.wrap{max-width:1120px;margin:auto;padding:20px}.card{background:#fff;border:1px solid #d1d5db;border-radius:14px;padding:16px;margin:12px 0}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px}.field label{display:block;font-size:12px;font-weight:800;margin-bottom:4px}.field input,.field textarea{width:100%;padding:9px;border:1px solid #cbd5e1;border-radius:8px;font-size:16px}.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}button{padding:9px 13px;border:1px solid #9ca3af;border-radius:9px;background:#fff;font-weight:750;cursor:pointer}button.primary{background:#111827;color:#fff;border-color:#111827}button.danger{background:#991b1b;color:#fff;border-color:#991b1b}button:disabled{opacity:.45;cursor:not-allowed}.badge{display:inline-block;padding:2px 7px;border-radius:999px;font-size:12px;font-weight:800;background:#e5e7eb}.ok{background:#dcfce7}.warn{background:#fef3c7}.err{background:#fee2e2}.drop{border:2px dashed #94a3b8;border-radius:12px;padding:18px;text-align:center}.small{font-size:12px;color:#64748b}.files{max-height:360px;overflow:auto;border:1px solid #e5e7eb;border-radius:10px}.row{display:grid;grid-template-columns:minmax(0,1fr) 100px 110px;gap:8px;padding:7px 10px;border-bottom:1px solid #eee;font-size:12px}.row:last-child{border-bottom:0}.log{min-height:140px;max-height:300px;overflow:auto;background:#111827;color:#e5e7eb;border-radius:10px;padding:10px;font:12px ui-monospace,SFMono-Regular,Menlo,monospace;white-space:pre-wrap}.gate{display:grid;gap:6px}.gate-line{display:flex;gap:8px;align-items:center}.progress{height:12px;background:#e5e7eb;border-radius:999px;overflow:hidden}.progress>div{height:100%;width:0;background:#111827;transition:width .2s}.dangerbox{border-color:#fecaca;background:#fff7f7}code{background:#f3f4f6;padding:1px 4px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>GK Generic GitHub Uploader <span class="badge">Studio Gate転用版</span></h1>
+<p class="small">ZIPの内容を任意GitHub Repository / Branch / Base Pathへ1 Commitで反映します。PATは保存しません。</p>
+
+<div class="card">
+<h2>1. GitHub接続</h2>
+<div class="grid">
+<div class="field"><label>Owner</label><input id="owner" placeholder="GitHub user / org"></div>
+<div class="field"><label>Repository</label><input id="repo" placeholder="repository"></div>
+<div class="field"><label>Branch</label><input id="branch" value="main"></div>
+<div class="field"><label>Base Path（空欄=repo root）</label><input id="base" placeholder="例: web/app"></div>
+</div>
+<div class="field" style="margin-top:10px"><label>PAT（保存しません）</label><input id="token" type="password" placeholder="github_pat_..." autocomplete="current-password"></div>
+<div class="toolbar"><button id="testBtn">接続確認</button><button id="saveBtn">接続先だけ保存</button></div>
+<div id="connStatus" class="small">未確認</div>
+</div>
+
+<div class="card">
+<h2>2. ZIP選択とローカルGate</h2>
+<div class="drop"><input id="zipFile" type="file" accept=".zip,application/zip"><p class="small">ZIP名と一致する明確な外箱フォルダ（例: <code>MyGame-main/MyGame...</code>）だけ自動除去します。<code>Assets/</code> など実パスは保持します。<code>DELETE_MANIFEST.txt</code>（Studio正式）と <code>DELETE_FILES.txt</code>（互換入力）は配置せず、今回分だけの完全一致削除候補として扱います。</p></div>
+<div class="grid" style="margin-top:10px">
+<div class="field"><label>保護パス（glob風、1行1件）</label><textarea id="protected" rows="5">.github/**
+.git/**
+**/.env
+**/*secret*
+**/*credential*</textarea></div>
+<div class="field"><label>除外パス（glob風、1行1件）</label><textarea id="excluded" rows="5">.git/**
+node_modules/**
+.DS_Store
+Thumbs.db</textarea></div>
+</div>
+<div class="toolbar"><button id="inspectBtn" class="primary" disabled>ローカル検査</button><button id="clearBtn">クリア</button></div>
+<div id="localStatus" class="small">ZIP未選択</div>
+</div>
+
+<div class="card">
+<h2>3. GitHub差分・Gate</h2>
+<div class="toolbar"><button id="analyzeBtn" class="primary" disabled>差分・Gateを検証</button><button id="diagBtn" disabled>Gate診断JSON</button></div>
+<div id="gateStatus" class="gate" style="margin-top:10px"></div>
+<div id="summary" class="small">未解析</div>
+<div id="fileList" class="files" style="margin-top:10px"></div>
+</div>
+
+<div class="card dangerbox">
+<h2>4. 削除・保護変更の明示承認</h2>
+<label><input id="allowDelete" type="checkbox"> 削除マニフェストの削除候補を許可する</label><br>
+<label><input id="allowProtected" type="checkbox"> 保護パスの変更・削除を許可する</label>
+<div class="field" style="margin-top:8px"><label>保護変更がある場合だけ <code>APPROVE PROTECTED</code> と入力</label><input id="approvalPhrase" autocomplete="off"></div>
+<p class="small">保護パス変更はチェックボックスだけでは通りません。Gate検証時の差分に対して明示フレーズが必要です。</p>
+</div>
+
+<div class="card">
+<h2>5. 配置</h2>
+<div class="field"><label>Commit message</label><input id="message" value="Upload package via GK Generic Uploader"></div>
+<label><input id="dryRun" type="checkbox"> Dry Run（GitHubへ書き込まない）</label>
+<div class="toolbar"><button id="deployBtn" class="primary" disabled>GitHubへ1 Commitで配置</button><button id="rollbackBtn" class="danger" disabled>直前の配置をRollback</button></div>
+<div class="progress" style="margin-top:10px"><div id="bar"></div></div>
+<div id="progressText" class="small">待機中</div>
+</div>
+
+<div class="card"><h2>ログ</h2><div id="log" class="log">Generic Uploader ready.</div></div>
+</div>
+<script src="jszip.min.js"></script>
+<script>
+'use strict';
+const $=id=>document.getElementById(id);let pkg=null,plan=null,lastDiag=null,busy=false;
+const SETTINGS='gk_generic_uploader_connection_v1',HISTORY='gk_generic_uploader_history_v1';
+const enc=new TextEncoder();
+function log(m){$('log').textContent+='\n['+new Date().toLocaleTimeString()+'] '+m;$('log').scrollTop=$('log').scrollHeight}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function norm(p){return String(p||'').replace(/\\/g,'/').replace(/^\.\//,'').replace(/^\/+|\/+$/g,'').replace(/\/+/g,'/')}
+function join(a,b){return [norm(a),norm(b)].filter(Boolean).join('/')}
+function fmt(n){if(n<1024)return n+' B';if(n<1048576)return (n/1024).toFixed(1)+' KB';return (n/1048576).toFixed(1)+' MB'}
+function lines(id){return $(id).value.split(/\r?\n/).map(norm).filter(Boolean)}
+function glob(path,pat){path=norm(path);pat=norm(pat);const re='^'+pat.replace(/[.+^${}()|[\]\\]/g,'\\$&').replace(/\*\*/g,'§§').replace(/\*/g,'[^/]*').replace(/§§/g,'.*')+'$';return new RegExp(re,'i').test(path)}
+function matches(path,id){return lines(id).some(p=>glob(path,p))}
+function unsafe(path){const p=String(path||'');return !p||p.startsWith('/')||p.includes('\\')||p.split('/').some(x=>x==='..'||x==='.')||/^\.git(?:\/|$)/i.test(norm(p))}
+function b64(bytes){let s='';const chunk=0x8000;for(let i=0;i<bytes.length;i+=chunk)s+=String.fromCharCode(...bytes.subarray(i,i+chunk));return btoa(s)}
+function fromB64(s){const bin=atob(String(s||'').replace(/\s/g,'')),a=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a}
+async function sha256(bytes){const h=await crypto.subtle.digest('SHA-256',bytes);return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function gitSha(bytes){const head=enc.encode(`blob ${bytes.length}\0`),all=new Uint8Array(head.length+bytes.length);all.set(head);all.set(bytes,head.length);const h=await crypto.subtle.digest('SHA-1',all);return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+function cfg(requireToken=true){const c={owner:$('owner').value.trim(),repo:$('repo').value.trim(),branch:$('branch').value.trim(),base:norm($('base').value),token:$('token').value.trim()};if(!c.owner||!c.repo||!c.branch||(requireToken&&!c.token))throw new Error('Owner / Repository / Branch / PATを入力してください。');return c}
+async function gh(url,opt={}){const c=cfg(true),res=await fetch(url,{...opt,cache:'no-store',headers:{Accept:'application/vnd.github+json','X-GitHub-Api-Version':'2022-11-28',Authorization:'Bearer '+c.token,...(opt.headers||{})}});const txt=await res.text();let body;try{body=txt?JSON.parse(txt):null}catch{body={message:txt}}if(!res.ok)throw Object.assign(new Error(`GitHub HTTP ${res.status}: ${body?.message||txt}`),{status:res.status,body});return body}
+async function head(c){const root=`https://api.github.com/repos/${encodeURIComponent(c.owner)}/${encodeURIComponent(c.repo)}`,bp=c.branch.split('/').map(encodeURIComponent).join('/'),nonce=`_=${Date.now()}-${Math.random().toString(16).slice(2)}`;const ref=await gh(`${root}/git/ref/heads/${bp}?${nonce}`),commit=await gh(`${root}/git/commits/${encodeURIComponent(ref.object.sha)}?${nonce}`),tree=await gh(`${root}/git/trees/${encodeURIComponent(commit.tree.sha)}?recursive=1&${nonce}`);if(tree.truncated)throw gateError('REMOTE_TREE_TRUNCATED','GitHub Tree応答がtruncatedです。安全のため停止しました。');return {root,headSha:ref.object.sha,treeSha:commit.tree.sha,tree}}
+function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+async function waitForHead(c,expected,attempts=8){let last=null;for(let i=0;i<attempts;i++){last=await head(c);if(last.headSha===expected)return last;log(`配置後HEAD確認 ${i+1}/${attempts}: ${last.headSha.slice(0,12)} (待機)`);await sleep(Math.min(500*(i+1),2000))}return last}
+function commonRoot(paths){if(!paths.length)return'';const seg=paths.map(p=>norm(p).split('/'));let out=[];for(let i=0;;i++){const v=seg[0][i];if(!v||!seg.every(s=>s[i]===v))break;out.push(v)}return out.length&&seg.some(s=>s.length>out.length)?out.join('/'):''}
+function zipStem(name){return String(name||'').replace(/\.zip$/i,'').replace(/\s*\(\d+\)$/,'').trim()}
+function wrapperRoot(paths,fileName){const root=commonRoot(paths);if(!root||root.includes('/'))return'';const stem=zipStem(fileName),a=root.toLowerCase(),b=stem.toLowerCase();if(a===b)return root;if(/-(main|master)$/i.test(root)&&b.startsWith(a.replace(/-(main|master)$/i,'')))return root;return''}
+function gateError(code,msg,details={}){const e=new Error(msg);e.gate={error_code:code,details};return e}
+function diag(e,stage){const d={schema:'gk.generic-uploader-gate-diagnostic.v1',generated_at:new Date().toISOString(),stage,error_code:e?.gate?.error_code||'GENERIC_ERROR',message:e?.message||String(e),details:e?.gate?.details||{},repository:{owner:$('owner').value.trim(),repo:$('repo').value.trim(),branch:$('branch').value.trim(),base:norm($('base').value)},token_saved:false};lastDiag=d;$('diagBtn').disabled=false;return d}
+function download(name,text,type='application/json'){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type}));a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+function setGate(rows){$('gateStatus').innerHTML=rows.map(r=>`<div class="gate-line"><span class="badge ${r.ok?'ok':'err'}">${r.ok?'PASS':'FAIL'}</span><b>${esc(r.name)}</b><span class="small">${esc(r.note||'')}</span></div>`).join('')}
+function render(){const fs=plan?.files||pkg?.files||[];$('fileList').innerHTML=fs.map(f=>`<div class="row"><span>${esc(f.target||f.path)}</span><span>${f.delete?'—':esc(fmt(f.size||0))}</span><span class="badge ${f.status==='UNCHANGED'?'ok':f.status==='DELETE'?'err':'warn'}">${esc(f.status||'LOCAL')}</span></div>`).join('');if(plan){const x=plan.files.reduce((a,f)=>(a[f.status]=(a[f.status]||0)+1,a),{});$('summary').textContent=`ADD ${x.ADD||0} / MODIFY ${x.MODIFY||0} / DELETE ${x.DELETE||0} / UNCHANGED ${x.UNCHANGED||0} / BLOCKED ${x.BLOCKED||0}`}}
+async function inspect(){try{if(typeof JSZip==='undefined')throw new Error('JSZipを読み込めません。');const file=$('zipFile').files[0];if(!file)throw new Error('ZIPを選択してください。');$('deployBtn').disabled=true;plan=null;lastDiag=null;$('diagBtn').disabled=true;const zip=await JSZip.loadAsync(await file.arrayBuffer());const entries=Object.values(zip.files).filter(x=>!x.dir);if(entries.length>5000)throw gateError('ZIP_TOO_MANY_FILES','ZIP内ファイル数が5000件を超えています。',{count:entries.length});const names=entries.map(e=>norm(e.name));const root=wrapperRoot(names,file.name);const files=[];let total=0,deleteRules=[];for(const e of entries){let p=norm(e.name);if(root&&p.startsWith(root+'/'))p=p.slice(root.length+1);if(!p)continue;if(['DELETE_MANIFEST.TXT','DELETE_FILES.TXT'].includes(p.toUpperCase())){const text=await e.async('string');const parsed=text.split(/\r?\n/).map(x=>x.trim()).filter(x=>x&&!x.startsWith('#')).map(norm);for(const rule of parsed){if(!rule)continue;if(unsafe(rule))throw gateError('UNSAFE_DELETE_PATH','危険な削除パス: '+rule,{path:rule,manifest:p});if(!deleteRules.includes(rule))deleteRules.push(rule)}continue}if(unsafe(p))throw gateError('UNSAFE_ZIP_PATH','危険なZIPパスを検出しました: '+p,{path:p});if(matches(p,'excluded'))continue;const bytes=new Uint8Array(await e.async('uint8array'));total+=bytes.length;if(total>250*1024*1024)throw gateError('ZIP_TOO_LARGE','展開後サイズが250MBを超えています。',{bytes:total});files.push({path:p,target:join(norm($('base').value),p),bytes,size:bytes.length,sha256:await sha256(bytes),gitSha:await gitSha(bytes),protected:matches(p,'protected'),status:'LOCAL'})}pkg={fileName:file.name,files,deleteRules,root,total};$('localStatus').innerHTML=`<span class="badge ok">PASS</span> ${files.length} files / ${fmt(total)} / DELETE rules ${deleteRules.length}`;$('analyzeBtn').disabled=false;setGate([{name:'ZIP構造',ok:true,note:'unsafe pathなし'},{name:'サイズ制限',ok:true,note:`${files.length} files / ${fmt(total)}`},{name:'Token保存',ok:true,note:'PATはlocalStorageへ保存しません'}]);render();log(`ローカルGate PASS: ${files.length} files, root=${root||'(none)'}`)}catch(e){diag(e,'LOCAL_INSPECTION');$('localStatus').innerHTML=`<span class="badge err">STOP</span> ${esc(e.message)}`;log('ローカルGate STOP: '+e.message)}}
+async function analyze(){try{if(!pkg)throw new Error('先にローカル検査してください。');const c=cfg(true),remote=await head(c),map=new Map((remote.tree.tree||[]).filter(x=>x.type==='blob').map(x=>[norm(x.path),x.sha]));const files=[];for(const f of pkg.files){const node=map.get(f.target);files.push({...f,status:!node?'ADD':node===f.gitSha?'UNCHANGED':'MODIFY',remoteSha:node||null})}const deletes=[];if($('allowDelete').checked){for(const rule of pkg.deleteRules){const target=join(c.base,rule);if(unsafe(rule))throw gateError('UNSAFE_DELETE_PATH','危険な削除パス: '+rule,{path:rule});const node=map.get(target);if(node)deletes.push({path:rule,target,delete:true,size:0,status:'DELETE',remoteSha:node,protected:matches(rule,'protected')})}}const all=[...files,...deletes];const protectedChanges=all.filter(f=>f.protected&&f.status!=='UNCHANGED');if(protectedChanges.length){if(!$('allowProtected').checked||$('approvalPhrase').value.trim()!=='APPROVE PROTECTED')throw gateError('PROTECTED_CHANGE_APPROVAL_REQUIRED','保護パス変更があります。保護変更許可と承認フレーズが必要です。',{paths:protectedChanges.map(x=>x.target)})}const changeCount=all.filter(f=>f.status!=='UNCHANGED').length;plan={...c,root:remote.root,headSha:remote.headSha,treeSha:remote.treeSha,files:all,preparedAt:new Date().toISOString()};setGate([{name:'GitHub HEAD取得',ok:true,note:remote.headSha.slice(0,12)},{name:'Tree完全性',ok:true,note:'truncated=false'},{name:'削除境界',ok:true,note:`完全一致manifest指定のみ ${deletes.length}件`},{name:'保護変更',ok:true,note:protectedChanges.length?`${protectedChanges.length}件 明示承認済み`:'なし'},{name:'Atomic Commit',ok:true,note:'Git Data API / force=false'}]);render();if(!changeCount){const unchanged=all.filter(f=>f.status==='UNCHANGED');$('deployBtn').disabled=true;$('summary').textContent=`ADD 0 / MODIFY 0 / DELETE 0 / UNCHANGED ${unchanged.length} / BLOCKED 0`;$('fileList').innerHTML=unchanged.map(f=>`<div class="row"><span>${esc(f.target||f.path)}</span><span>${f.delete?'—':esc(fmt(f.size||0))}</span><span class="badge ok">UNCHANGED</span></div>`).join('');$('gateStatus').insertAdjacentHTML('beforeend','<div class="gate-line"><span class="badge err">STOP</span><b>NO_CHANGES</b><span>GitHubとの差分がありません。</span></div>');$('progressText').textContent=`変更なし: UNCHANGED ${unchanged.length}`;$('bar').style.width='0%';log(`差分Gate NO_CHANGES: unchanged=${unchanged.length}, head=${remote.headSha}`);return}$('deployBtn').disabled=false;$('gateStatus').insertAdjacentHTML('beforeend','<div class="gate-line"><span class="badge ok">READY</span><b>配置可能</b></div>');log(`差分Gate PASS: changes=${changeCount}, head=${remote.headSha}`)}catch(e){plan=null;$('deployBtn').disabled=true;diag(e,'REMOTE_DIFF_GATE');$('gateStatus').innerHTML=`<div class="gate-line"><span class="badge err">STOP</span><b>${esc(e?.gate?.error_code||'ERROR')}</b><span>${esc(e.message)}</span></div>`;log('差分Gate STOP: '+e.message)}}
+async function deploy(){if(busy)return;try{if(!plan)throw new Error('差分・Gateを再実行してください。');busy=true;$('deployBtn').disabled=true;const c=cfg(true),fresh=await head(c);if(fresh.headSha!==plan.headSha)throw gateError('REMOTE_HEAD_CHANGED','Gate後にGitHub HEADが変わりました。差分を再検証してください。',{expected:plan.headSha,actual:fresh.headSha});const changes=plan.files.filter(f=>f.status!=='UNCHANGED');if($('dryRun').checked){log('DRY RUN: '+changes.map(f=>`${f.status} ${f.target}`).join(', '));$('progressText').textContent=`Dry Run PASS: ${changes.length} changes`;$('bar').style.width='100%';$('deployBtn').disabled=false;return}const entries=[];let done=0;for(const f of changes){if(f.status==='DELETE'){entries.push({path:f.target,mode:'100644',type:'blob',sha:null});continue}const blob=await gh(`${plan.root}/git/blobs`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({content:b64(f.bytes),encoding:'base64'})});if(blob.sha!==f.gitSha)throw gateError('BLOB_SHA_MISMATCH','作成Blob SHAがローカル計算値と一致しません。',{path:f.target,expected:f.gitSha,actual:blob.sha});entries.push({path:f.target,mode:'100644',type:'blob',sha:blob.sha});done++;$('bar').style.width=Math.round((done/changes.length)*60)+'%';$('progressText').textContent=`Blob作成 ${done}/${changes.length}`}const tree=await gh(`${plan.root}/git/trees`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({base_tree:plan.treeSha,tree:entries})});$('bar').style.width='75%';const msg=$('message').value.trim()||'Upload package via GK Generic Uploader';const commit=await gh(`${plan.root}/git/commits`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,tree:tree.sha,parents:[plan.headSha]})});$('bar').style.width='88%';const bp=c.branch.split('/').map(encodeURIComponent).join('/');await gh(`${plan.root}/git/refs/heads/${bp}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:commit.sha,force:false})});$('bar').style.width='95%';const verified=await waitForHead(c,commit.sha,8);if(verified.headSha!==commit.sha)throw gateError('POST_VERIFY_HEAD_MISMATCH','配置Commitは作成されましたが、GitHub APIで新しいHEADを確認できませんでした。再配置せず、GitHubの最新Commitを確認してください。',{expected:commit.sha,actual:verified.headSha});const vmap=new Map((verified.tree.tree||[]).filter(x=>x.type==='blob').map(x=>[norm(x.path),x.sha]));for(const f of changes){if(f.status==='DELETE'){if(vmap.has(f.target))throw gateError('POST_VERIFY_DELETE_FAILED','削除後もパスが存在します: '+f.target);continue}if(vmap.get(f.target)!==f.gitSha)throw gateError('POST_VERIFY_BLOB_MISMATCH','配置後Blob SHA不一致: '+f.target)}const hist={owner:c.owner,repo:c.repo,branch:c.branch,oldHead:plan.headSha,newHead:commit.sha,oldTree:plan.treeSha,message:msg,at:new Date().toISOString(),changes:changes.map(x=>({path:x.target,status:x.status}))};localStorage.setItem(HISTORY,JSON.stringify(hist));$('rollbackBtn').disabled=false;$('bar').style.width='100%';$('progressText').textContent=`完了: ${changes.length} changes / Commit ${commit.sha.slice(0,12)} / Post-Verify PASS`;log('配置完了: '+commit.sha);plan=null;$('deployBtn').disabled=true}catch(e){diag(e,'DEPLOY_EXECUTION');$('progressText').textContent='STOP: '+e.message;log('配置STOP: '+e.message);if(plan)$('deployBtn').disabled=false}finally{busy=false}}
+async function rollback(){if(busy)return;try{const h=JSON.parse(localStorage.getItem(HISTORY)||'null');if(!h)throw new Error('Rollback履歴がありません。');const c=cfg(true);if(c.owner!==h.owner||c.repo!==h.repo||c.branch!==h.branch)throw new Error('現在の接続先とRollback履歴が一致しません。');busy=true;const cur=await head(c);if(cur.headSha!==h.newHead)throw gateError('ROLLBACK_HEAD_CHANGED','配置後に別Commitがあります。自動Rollbackを停止しました。',{expected:h.newHead,actual:cur.headSha});const old=await gh(`${cur.root}/git/commits/${encodeURIComponent(h.oldHead)}`),msg='Rollback: '+h.message,commit=await gh(`${cur.root}/git/commits`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:msg,tree:old.tree.sha,parents:[cur.headSha]})});const bp=c.branch.split('/').map(encodeURIComponent).join('/');await gh(`${cur.root}/git/refs/heads/${bp}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({sha:commit.sha,force:false})});localStorage.removeItem(HISTORY);$('rollbackBtn').disabled=true;log('Rollback完了: '+commit.sha);$('progressText').textContent='Rollback完了: '+commit.sha.slice(0,12)}catch(e){diag(e,'ROLLBACK');log('Rollback STOP: '+e.message);$('progressText').textContent='Rollback STOP: '+e.message}finally{busy=false}}
+function loadSettings(){try{const s=JSON.parse(localStorage.getItem(SETTINGS)||'{}');$('owner').value=s.owner||'';$('repo').value=s.repo||'';$('branch').value=s.branch||'main';$('base').value=s.base||''}catch{}$('rollbackBtn').disabled=!localStorage.getItem(HISTORY)}
+$('zipFile').onchange=()=>{$('inspectBtn').disabled=!$('zipFile').files.length;$('analyzeBtn').disabled=true;$('deployBtn').disabled=true;plan=null};$('dryRun').onchange=()=>{if(plan&&!busy)$('deployBtn').disabled=false};$('inspectBtn').onclick=inspect;$('analyzeBtn').onclick=analyze;$('deployBtn').onclick=deploy;$('rollbackBtn').onclick=rollback;$('clearBtn').onclick=()=>location.reload();$('diagBtn').onclick=()=>lastDiag&&download(`GK_Generic_Uploader_Gate_${new Date().toISOString().replace(/[:.]/g,'-')}.json`,JSON.stringify(lastDiag,null,2));$('saveBtn').onclick=()=>{const c=cfg(false);localStorage.setItem(SETTINGS,JSON.stringify({owner:c.owner,repo:c.repo,branch:c.branch,base:c.base}));$('connStatus').textContent='Owner / Repository / Branch / Base Pathだけ保存しました。PATは保存していません。'};$('testBtn').onclick=async()=>{try{const c=cfg(true),r=await head(c);$('connStatus').innerHTML=`<span class="badge ok">PASS</span> ${esc(c.owner+'/'+c.repo+'@'+c.branch)} / HEAD ${esc(r.headSha.slice(0,12))}`;log('GitHub接続PASS')}catch(e){diag(e,'CONNECTION');$('connStatus').innerHTML=`<span class="badge err">FAIL</span> ${esc(e.message)}`}};loadSettings();
+</script>
+</body>
+</html>
