@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "url": "http://127.0.0.1:8080/?ci=163ae37e233d1bbcc138ebc3dc21e1805a374cc8",
-  "sourceSha": "163ae37e233d1bbcc138ebc3dc21e1805a374cc8",
+  "url": "http://127.0.0.1:8080/?ci=515976e9270d6055756fe4bed1c287d6e12cc2c3",
+  "sourceSha": "515976e9270d6055756fe4bed1c287d6e12cc2c3",
   "canvas": {
     "width": 960,
     "height": 600,
