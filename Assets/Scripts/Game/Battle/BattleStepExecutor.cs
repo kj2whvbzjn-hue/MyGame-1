@@ -7,7 +7,7 @@ namespace GuildAdventure.Game.Battle
 {
     public sealed class BattleAttackProposal
     {
-        public string reservationId,hitId,sourceId,targetId,skillId;
+        public string reservationId,sourceId,targetId,skillId;
         public DamageType damageType;
         public double criticalRatePercent,accuracy,evasion,magicAccuracy,magicResistance;
         public double baseDamage,damageResistance,criticalBonusDamagePercent=HitCritical.InitialCriticalBonusDamagePercent;
@@ -42,8 +42,8 @@ namespace GuildAdventure.Game.Battle
             if(source==null||target==null)return Fail("BATTLE_STEP_ACTOR_MISSING");
             if(!source.alive||source.hp<=0)return Fail("BATTLE_STEP_SOURCE_DEAD");
             if(!target.alive||target.hp<=0)return Fail("BATTLE_STEP_TARGET_DEAD");
-            if(string.IsNullOrWhiteSpace(p.reservationId)||string.IsNullOrWhiteSpace(p.hitId))return Fail("BATTLE_STEP_ID_MISSING");
-            if(snapshot.actionReservations.Exists(x=>x.reservationId==p.reservationId)||snapshot.resolvedHits.Exists(x=>x.hitId==p.hitId))
+            if(string.IsNullOrWhiteSpace(p.reservationId))return Fail("BATTLE_STEP_ID_MISSING");
+            if(snapshot.actionReservations.Exists(x=>x.reservationId==p.reservationId))
                 return Fail("BATTLE_STEP_ID_DUPLICATE");
 
             var reservation=new ActionReservationSaveRecord{

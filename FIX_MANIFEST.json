@@ -1,0 +1,30 @@
+{
+  "base": "MyGame-1-main(14).zip",
+  "changes": [
+    "C03に存在しないhitId参照を削除",
+    "BattleAttackProposalの暫定hitIdを削除",
+    "重複判定を正式C02 reservationIdへ変更"
+  ],
+  "post_fix_sensitive_obsolete_refs": [
+    [
+      "MyGame-1-main/Assets/Scripts/Game/Battle/BattleStepExecutor.cs",
+      ".fatal"
+    ],
+    [
+      "MyGame-1-main/Assets/Scripts/Game/Battle/BattleStepExecutor.cs",
+      ".committed"
+    ],
+    [
+      "MyGame-1-main/Assets/Scripts/Game/Save/BattleRuntimeFactory.cs",
+      ".committed"
+    ],
+    [
+      "MyGame-1-main/Assets/Scripts/Game/Save/BattleSnapshotSaveRecord.cs",
+      ".committed"
+    ],
+    [
+      "MyGame-1-main/Assets/Scripts/Game/Save/GameSaveState.cs",
+      ".committed"
+    ]
+  ]
+}
