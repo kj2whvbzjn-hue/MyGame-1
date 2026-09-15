@@ -5,10 +5,12 @@ on:
   push:
     branches:
       - main
+      - migration/battle-runtime
     paths:
       - 'Assets/**'
       - 'Packages/**'
       - 'ProjectSettings/**'
+      - '.github/workflows/main.yml'
 
 permissions:
   contents: read
@@ -37,8 +39,6 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      # Cache only downloaded Unity packages.
-      # Whole-Library restore caused FAST exit code 137 on this project.
       - name: Restore Unity PackageCache
         id: unity-package-cache
         uses: actions/cache@v4
@@ -48,8 +48,6 @@ jobs:
           restore-keys: |
             unity-packagecache-${{ runner.os }}-
 
-      # FAST incremental state proven useful by measurements.
-      # BurstCache/JIT is intentionally excluded: warm-run testing showed no benefit.
       - name: Restore FAST incremental cache
         id: unity-fast-incremental-cache
         uses: actions/cache@v4
@@ -67,17 +65,15 @@ jobs:
         shell: bash
         run: |
           echo '=== FAST PERFORMANCE DIAGNOSTICS: BEFORE UNITY ==='
+          echo "Branch: $GITHUB_REF_NAME"
+          echo "SHA: $GITHUB_SHA"
           echo "PackageCache cache-hit: ${{ steps.unity-package-cache.outputs.cache-hit }}"
           echo "FAST incremental cache-hit: ${{ steps.unity-fast-incremental-cache.outputs.cache-hit }}"
-          echo 'Disk:'
           df -h . || true
-          echo 'Library directories before Unity:'
-          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB Library/DataStore; do
-            if [ -e "$d" ]; then du -sh "$d" || true; else echo "MISSING $d"; fi
-          done
-          echo '================================================='
 
       - name: Run Unity FAST validation
+        id: unity_fast
+        continue-on-error: true
         uses: game-ci/unity-builder@v4
         env:
           UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
@@ -87,69 +83,75 @@ jobs:
           targetPlatform: WebGL
           buildMethod: AutomationEntry.ValidateOnly
 
-      - name: FAST diagnostics after Unity
-        if: always()
-        shell: bash
-        run: |
-          echo '=== FAST PERFORMANCE DIAGNOSTICS: AFTER UNITY ==='
-          echo 'Library directory sizes:'
-          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB Library/DataStore; do
-            if [ -e "$d" ]; then du -sh "$d" || true; else echo "MISSING $d"; fi
-          done
-          echo
-          echo 'Largest Library subdirectories:'
-          if [ -d Library ]; then
-            du -h -d 2 Library 2>/dev/null | sort -h | tail -30 || true
-          else
-            echo 'MISSING Library'
-          fi
-          echo
-          echo 'Unity/Bee timing and rebuild clues found in logs:'
-          LOGS=""
-          for f in             "$GITHUB_WORKSPACE/Library/Bee/bee_backend.info"             "$GITHUB_WORKSPACE/Library/Bee/bee_backend.log"             "$GITHUB_WORKSPACE/Library/LastSceneManagerSetup.txt"             "$GITHUB_WORKSPACE/Editor.log"             "$HOME/.config/unity3d/Editor.log"; do
-            [ -f "$f" ] && LOGS="$LOGS $f"
-          done
-          if [ -n "$LOGS" ]; then
-            grep -Eai 'Import|Refresh|compile|compil|Bee|Tundra|IL2CPP|AutomationEntry|ValidateOnly|domain reload|reload assemblies|script assembl|cache hit|cache miss|requires additional run|seconds|ms' $LOGS 2>/dev/null | tail -250 || true
-          else
-            echo 'No readable Unity timing log file found outside the unity-builder step.'
-          fi
-          echo '================================================'
-
-      - name: Extract Unity errors
+      - name: Collect Unity logs and errors
         if: always()
         shell: bash
         run: |
           set +e
-          OUT="$GITHUB_WORKSPACE/unity-error-report.txt"
-          : > "$OUT"
-          echo "Unity FAST error report" >> "$OUT"
-          echo "Run: $GITHUB_RUN_NUMBER  SHA: $GITHUB_SHA" >> "$OUT"
-          echo >> "$OUT"
-          FOUND=0
-          for f in "$GITHUB_WORKSPACE/Editor.log" "$HOME/.config/unity3d/Editor.log"; do
-            if [ -f "$f" ]; then
-              echo "===== $f =====" >> "$OUT"
-              grep -Eai 'error CS[0-9]+|Scripts have compiler errors|Compilation failed|Script Compilation Error|Tundra build failed|Aborting batchmode due to failure|Unhandled Exception|Exception:' "$f" >> "$OUT" || true
-              FOUND=1
-            fi
+          REPORT="$GITHUB_WORKSPACE/unity-error-report.txt"
+          FILES="$GITHUB_WORKSPACE/unity-log-files.txt"
+          : > "$REPORT"
+          : > "$FILES"
+
+          echo "Unity FAST error report" >> "$REPORT"
+          echo "Branch: $GITHUB_REF_NAME" >> "$REPORT"
+          echo "Run: $GITHUB_RUN_NUMBER  SHA: $GITHUB_SHA" >> "$REPORT"
+          echo "unity-builder outcome: ${{ steps.unity_fast.outcome }}" >> "$REPORT"
+          echo >> "$REPORT"
+
+          # game-ci may write logs under several workspace/temp/home locations.
+          for root in "$GITHUB_WORKSPACE" "$RUNNER_TEMP" "$HOME"; do
+            [ -d "$root" ] || continue
+            find "$root" -maxdepth 6 -type f \
+              \( -iname 'Editor.log' -o -iname '*.log' -o -iname '*.txt' \) \
+              -print 2>/dev/null >> "$FILES" || true
           done
-          if [ "$FOUND" -eq 0 ]; then
-            echo "No readable Editor.log found." >> "$OUT"
+          sort -u "$FILES" -o "$FILES"
+
+          echo '===== discovered candidate log files =====' >> "$REPORT"
+          grep -Ei 'unity|editor|game-ci|builder|build|bee|tundra' "$FILES" | tail -200 >> "$REPORT" || true
+          echo >> "$REPORT"
+          echo '===== extracted Unity/compiler errors =====' >> "$REPORT"
+
+          MATCHED=0
+          while IFS= read -r f; do
+            [ -f "$f" ] || continue
+            if grep -Eqi 'error CS[0-9]+|Scripts have compiler errors|Compilation failed|Script Compilation Error|Tundra build failed|Aborting batchmode due to failure|Unhandled Exception|Exception:|Build failed' "$f" 2>/dev/null; then
+              echo >> "$REPORT"
+              echo "----- $f -----" >> "$REPORT"
+              grep -Eain -C 4 'error CS[0-9]+|Scripts have compiler errors|Compilation failed|Script Compilation Error|Tundra build failed|Aborting batchmode due to failure|Unhandled Exception|Exception:|Build failed' "$f" 2>/dev/null | tail -400 >> "$REPORT" || true
+              MATCHED=1
+            fi
+          done < "$FILES"
+
+          if [ "$MATCHED" -eq 0 ]; then
+            echo 'No compiler/error pattern found in readable files.' >> "$REPORT"
+            echo 'Candidate files were listed above for diagnosis.' >> "$REPORT"
           fi
-          cat "$OUT"
+
+          cat "$REPORT"
           {
             echo '## Unity FAST error report'
+            echo
             echo '```text'
-            tail -200 "$OUT"
+            tail -500 "$REPORT"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Upload Unity error report
+      - name: Upload Unity diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: unity-fast-error-report-${{ github.run_number }}
-          path: unity-error-report.txt
+          path: |
+            unity-error-report.txt
+            unity-log-files.txt
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Fail workflow when Unity validation failed
+        if: steps.unity_fast.outcome != 'success'
+        shell: bash
+        run: |
+          echo 'Unity FAST validation failed. See the Job Summary or unity-fast-error-report artifact.'
+          exit 1
