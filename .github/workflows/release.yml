@@ -32,16 +32,19 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      # Cache only downloaded Unity packages.
-      # Whole-Library restore caused FAST exit code 137 on this project.
-      - name: Restore Unity PackageCache
-        id: unity-package-cache
+
+      # Cache only WebGL compilation outputs that are expensive to regenerate.
+      # Do NOT cache the whole Library directory: that previously caused exit code 137.
+      - name: Restore WebGL Bee and Burst cache
+        id: unity-webgl-build-cache
         uses: actions/cache@v4
         with:
-          path: Library/PackageCache
-          key: unity-packagecache-${{ runner.os }}-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          path: |
+            Library/Bee/artifacts/WebGL
+            Library/BurstCache/Wasm-Wasm
+          key: unity-webgl-build-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-${{ github.sha }}
           restore-keys: |
-            unity-packagecache-${{ runner.os }}-
+            unity-webgl-build-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-
 
       - name: Build Unity WebGL
         uses: game-ci/unity-builder@v4

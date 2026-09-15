@@ -30,16 +30,19 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      # Cache only downloaded Unity packages.
-      # Whole-Library restore caused FAST exit code 137 on this project.
-      - name: Restore Unity PackageCache
-        id: unity-package-cache
+
+      # Cache only WebGL compilation outputs that are expensive to regenerate.
+      # Do NOT cache the whole Library directory: that previously caused exit code 137.
+      - name: Restore WebGL Bee and Burst cache
+        id: unity-webgl-build-cache
         uses: actions/cache@v4
         with:
-          path: Library/PackageCache
-          key: unity-packagecache-${{ runner.os }}-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          path: |
+            Library/Bee/artifacts/WebGL
+            Library/BurstCache/Wasm-Wasm
+          key: unity-webgl-build-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-${{ github.sha }}
           restore-keys: |
-            unity-packagecache-${{ runner.os }}-
+            unity-webgl-build-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-
 
       - name: Build Unity WebGL
         uses: game-ci/unity-builder@v4
@@ -96,7 +99,6 @@ jobs:
           rm -f test-results/latest/webgl-smoke.png
           rm -f test-results/latest/webgl-smoke-failure.png
           rm -f test-results/latest/webgl-report.json
-          rm -f test-results/latest/webgl-ai-review.jpg
 
           if [ -f playwright-artifacts/webgl-smoke.png ]; then
             cp playwright-artifacts/webgl-smoke.png test-results/latest/webgl-smoke.png
@@ -108,10 +110,6 @@ jobs:
 
           if [ -f playwright-artifacts/webgl-report.json ]; then
             cp playwright-artifacts/webgl-report.json test-results/latest/webgl-report.json
-          fi
-
-          if [ -f playwright-artifacts/webgl-ai-review.jpg ]; then
-            cp playwright-artifacts/webgl-ai-review.jpg test-results/latest/webgl-ai-review.jpg
           fi
 
           cat > test-results/latest/run-info.json <<EOF
@@ -134,4 +132,5 @@ jobs:
           fi
 
           git commit -m "chore: publish latest TEST evidence [skip ci]"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
           git push origin HEAD:"${GITHUB_REF_NAME}"
