@@ -18,9 +18,11 @@ namespace GuildAdventure.Game.Battle
             if(stream.recordedRolls==null)stream.recordedRolls=new List<double>();
         }
 
-        public double NextDouble()
+        public double Next01(string purpose)
         {
-            var value=inner.NextDouble();
+            if(string.IsNullOrWhiteSpace(purpose))throw new ArgumentException("RNG_PURPOSE_REQUIRED",nameof(purpose));
+            if(!string.Equals(stream.purpose,purpose,StringComparison.Ordinal))throw new InvalidOperationException("RNG_PURPOSE_MISMATCH");
+            var value=inner.Next01(purpose);
             if(value<0||value>=1)throw new InvalidOperationException("RNG_VALUE_OUT_OF_RANGE");
             stream.recordedRolls.Add(value);
             stream.cursor=stream.recordedRolls.Count;
@@ -35,8 +37,10 @@ namespace GuildAdventure.Game.Battle
         {
             this.stream=stream??throw new ArgumentNullException(nameof(stream));
         }
-        public double NextDouble()
+        public double Next01(string purpose)
         {
+            if(string.IsNullOrWhiteSpace(purpose))throw new ArgumentException("RNG_PURPOSE_REQUIRED",nameof(purpose));
+            if(!string.Equals(stream.purpose,purpose,StringComparison.Ordinal))throw new InvalidOperationException("RNG_PURPOSE_MISMATCH");
             if(stream.recordedRolls==null||stream.cursor>=stream.recordedRolls.Count)
                 throw new InvalidOperationException("RNG_REPLAY_EXHAUSTED");
             return stream.recordedRolls[stream.cursor++];

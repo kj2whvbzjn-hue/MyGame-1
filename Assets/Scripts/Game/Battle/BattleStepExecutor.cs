@@ -54,7 +54,7 @@ namespace GuildAdventure.Game.Battle
             };
 
             var hit=HitCritical.Resolve(p.criticalRatePercent,p.damageType,p.accuracy,p.evasion,p.magicAccuracy,p.magicResistance,
-                criticalRng.NextDouble,hitRng.NextDouble);
+                ()=>criticalRng.Next01("CRITICAL"),()=>hitRng.Next01("HIT"));
             var resolved=new ResolvedHitSaveRecord{
                 actionId=p.reservationId,hitIndex=snapshot.resolvedHits.FindAll(x=>x.actionId==p.reservationId).Count,
                 sourceId=p.sourceId,targetId=p.targetId,
@@ -78,7 +78,7 @@ namespace GuildAdventure.Game.Battle
             if(p.blockEligible&&p.blockRate>0)
             {
                 if(blockRng==null)return Fail("BATTLE_STEP_BLOCK_RNG_MISSING");
-                blockRoll=blockRng.NextDouble(); resolved.rngRolls.Add(blockRoll.Value);
+                blockRoll=blockRng.Next01("BLOCK"); resolved.rngRolls.Add(blockRoll.Value);
             }
             var block=DamageDefense.ResolveBlock(damage.finalDamage,p.blockEligible,p.blockRate,p.blockCutRate,blockRoll);
             resolved.block=new OpaqueContractPayload{json=block.blocked?"{\"blocked\":true}":"{\"blocked\":false}"};

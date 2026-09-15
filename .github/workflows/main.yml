@@ -115,3 +115,41 @@ jobs:
             echo 'No readable Unity timing log file found outside the unity-builder step.'
           fi
           echo '================================================'
+
+      - name: Extract Unity errors
+        if: always()
+        shell: bash
+        run: |
+          set +e
+          OUT="$GITHUB_WORKSPACE/unity-error-report.txt"
+          : > "$OUT"
+          echo "Unity FAST error report" >> "$OUT"
+          echo "Run: $GITHUB_RUN_NUMBER  SHA: $GITHUB_SHA" >> "$OUT"
+          echo >> "$OUT"
+          FOUND=0
+          for f in "$GITHUB_WORKSPACE/Editor.log" "$HOME/.config/unity3d/Editor.log"; do
+            if [ -f "$f" ]; then
+              echo "===== $f =====" >> "$OUT"
+              grep -Eai 'error CS[0-9]+|Scripts have compiler errors|Compilation failed|Script Compilation Error|Tundra build failed|Aborting batchmode due to failure|Unhandled Exception|Exception:' "$f" >> "$OUT" || true
+              FOUND=1
+            fi
+          done
+          if [ "$FOUND" -eq 0 ]; then
+            echo "No readable Editor.log found." >> "$OUT"
+          fi
+          cat "$OUT"
+          {
+            echo '## Unity FAST error report'
+            echo '```text'
+            tail -200 "$OUT"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload Unity error report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: unity-fast-error-report-${{ github.run_number }}
+          path: unity-error-report.txt
+          if-no-files-found: warn
+          retention-days: 14
