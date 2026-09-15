@@ -4,7 +4,6 @@ using System.Linq;
 
 namespace GuildAdventure.Game.Battle
 {
-    // GS-20 formal trigger vocabulary. Legacy aliases are retained for existing callers.
     public enum TriggerEvent
     {
         ON_USE,ON_HIT_RECEIVED,ON_DAMAGE_DEALT,ON_TURN_START,ON_TURN_END,ON_DEATH,ON_STATUS_APPLIED,
@@ -12,11 +11,13 @@ namespace GuildAdventure.Game.Battle
         BATTLE_START=ON_BATTLE_START,TURN_START=ON_TURN_START,BEFORE_ACTION=ON_USE,AFTER_ACTION=ON_TURN_END,
         ON_HIT=ON_HIT_DEALT,ON_DAMAGE=ON_DAMAGE_DEALT
     }
+    public enum ReactiveFamily{NORMAL,COUNTER,FOLLOW_UP}
 
     [Serializable] public sealed class TriggerRegistration
     {
         public string id,ownerId;
         public TriggerEvent trigger;
+        public ReactiveFamily reactiveFamily=ReactiveFamily.NORMAL;
         public int priority,sequence;
         public bool once,consumed;
         public double activationChance=1d;
