@@ -48,11 +48,26 @@ jobs:
           restore-keys: |
             unity-packagecache-${{ runner.os }}-
 
+      # FAST-only incremental state experiment.
+      # Keep this deliberately small: whole-Library caching previously caused exit 137.
+      - name: Restore FAST incremental cache
+        id: unity-fast-incremental-cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            Library/Bee
+            Library/ScriptAssemblies
+            Library/ArtifactDB
+          key: unity-fast-incremental-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-${{ github.sha }}
+          restore-keys: |
+            unity-fast-incremental-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-
+
       - name: FAST diagnostics before Unity
         shell: bash
         run: |
           echo '=== FAST PERFORMANCE DIAGNOSTICS: BEFORE UNITY ==='
           echo "PackageCache cache-hit: ${{ steps.unity-package-cache.outputs.cache-hit }}"
+          echo "FAST incremental cache-hit: ${{ steps.unity-fast-incremental-cache.outputs.cache-hit }}"
           echo 'Disk:'
           df -h . || true
           echo 'Library directories before Unity:'
