@@ -30,8 +30,17 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      # Keep downloaded Unity packages cached without restoring the whole Library.
+      - name: Restore Unity PackageCache
+        id: unity-package-cache
+        uses: actions/cache@v4
+        with:
+          path: Library/PackageCache
+          key: unity-packagecache-${{ runner.os }}-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
+          restore-keys: |
+            unity-packagecache-${{ runner.os }}-
 
-      # Cache only WebGL compilation outputs that are expensive to regenerate.
+      # Cache only expensive WebGL compilation outputs.
       # Do NOT cache the whole Library directory: that previously caused exit code 137.
       - name: Restore WebGL Bee and Burst cache
         id: unity-webgl-build-cache
@@ -99,6 +108,7 @@ jobs:
           rm -f test-results/latest/webgl-smoke.png
           rm -f test-results/latest/webgl-smoke-failure.png
           rm -f test-results/latest/webgl-report.json
+          rm -f test-results/latest/webgl-ai-review.jpg
 
           if [ -f playwright-artifacts/webgl-smoke.png ]; then
             cp playwright-artifacts/webgl-smoke.png test-results/latest/webgl-smoke.png
@@ -110,6 +120,10 @@ jobs:
 
           if [ -f playwright-artifacts/webgl-report.json ]; then
             cp playwright-artifacts/webgl-report.json test-results/latest/webgl-report.json
+          fi
+
+          if [ -f playwright-artifacts/webgl-ai-review.jpg ]; then
+            cp playwright-artifacts/webgl-ai-review.jpg test-results/latest/webgl-ai-review.jpg
           fi
 
           cat > test-results/latest/run-info.json <<EOF
@@ -132,5 +146,6 @@ jobs:
           fi
 
           git commit -m "chore: publish latest TEST evidence [skip ci]"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
+          # Unity generates unstaged Library/project files during the build.
+          # Do not run git pull --rebase here: it fails when those files exist.
           git push origin HEAD:"${GITHUB_REF_NAME}"
