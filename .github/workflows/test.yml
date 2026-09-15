@@ -118,5 +118,9 @@ jobs:
           fi
 
           git commit -m "chore: publish latest TEST evidence [skip ci]"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
+
+          # Unity/WebGL build can leave unrelated tracked or untracked files in
+          # the runner workspace. Do not rebase that dirty working tree.
+          # Instead push the evidence commit directly. If main moved while TEST
+          # was running, fail safely rather than overwriting newer work.
           git push origin HEAD:"${GITHUB_REF_NAME}"
