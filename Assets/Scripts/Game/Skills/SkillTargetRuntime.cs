@@ -1,0 +1,20 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using GuildAdventure.Game.Core;
+using GuildAdventure.Game.Save;
+namespace GuildAdventure.Game.Skills
+{
+ public enum SkillTargetCategory{SELF,ALLY,ENEMY,CORPSE,POINT}
+ public enum SkillTargetRange{SINGLE,FRONT,BACK,RANDOM,ALL}
+ public sealed class SkillTargetRequest{public string sourceId,selectedTargetId;public SkillTargetCategory category;public SkillTargetRange range;public int randomCount=1;public bool excludeSelf;public IEnumerable<string> candidateIds;}
+ public sealed class SkillTargetResult{public bool ok;public string reason;public List<string> targetIds=new List<string>();}
+ public static class SkillTargetRuntime
+ {
+  public const string RngPurpose="TARGET_SELECTION";
+  public static SkillTargetResult Resolve(BattleSnapshotSaveRecord snapshot,SkillTargetRequest r,IRandomSource rng){if(snapshot==null||r==null||string.IsNullOrWhiteSpace(r.sourceId))return Fail("SKILL_TARGET_INPUT_INVALID");var source=snapshot.actors.Find(x=>x.actorId==r.sourceId);if(source==null)return Fail("SKILL_TARGET_SOURCE_MISSING");if(r.category==SkillTargetCategory.POINT)return Fail("SKILL_TARGET_POINT_NOT_SUPPORTED_BY_BATTLE_SNAPSHOT");var candidates=(r.candidateIds??snapshot.fixedActorOrder??new List<string>()).Where(x=>!string.IsNullOrWhiteSpace(x)).Distinct(StringComparer.Ordinal).Select(id=>snapshot.actors.Find(a=>a.actorId==id)).Where(a=>Eligible(source,a,r.category,r.excludeSelf)).OrderBy(a=>Index(snapshot,a.actorId)).ThenBy(a=>a.actorId,StringComparer.Ordinal).Select(a=>a.actorId).ToList();if(r.category==SkillTargetCategory.SELF)candidates=new List<string>{source.actorId};if(r.range==SkillTargetRange.SINGLE){var id=!string.IsNullOrWhiteSpace(r.selectedTargetId)?r.selectedTargetId:candidates.FirstOrDefault();if(id==null||!candidates.Contains(id))return Fail("SKILL_TARGET_SINGLE_INVALID");return Ok(id);}if(candidates.Count==0)return Fail("SKILL_TARGET_NOT_FOUND");if(r.range==SkillTargetRange.ALL)return new SkillTargetResult{ok=true,targetIds=candidates};if(r.range==SkillTargetRange.FRONT)return Ok(candidates[0]);if(r.range==SkillTargetRange.BACK)return Ok(candidates[candidates.Count-1]);if(r.range==SkillTargetRange.RANDOM){if(r.randomCount<=0)return Fail("SKILL_TARGET_RANDOM_COUNT_INVALID");var pool=new List<string>(candidates);var result=new SkillTargetResult{ok=true};var count=Math.Min(r.randomCount,pool.Count);for(var i=0;i<count;i++){if(pool.Count==1){result.targetIds.Add(pool[0]);pool.RemoveAt(0);continue;}if(rng==null)return Fail("SKILL_TARGET_RNG_MISSING");var roll=rng.Next01(RngPurpose);if(double.IsNaN(roll)||double.IsInfinity(roll)||roll<0||roll>=1)return Fail("SKILL_TARGET_RNG_RANGE");var index=Math.Min(pool.Count-1,(int)Math.Floor(roll*pool.Count));result.targetIds.Add(pool[index]);pool.RemoveAt(index);}return result;}return Fail("SKILL_TARGET_RANGE_UNSUPPORTED");}
+  static bool Eligible(BattleActorSaveRecord source,BattleActorSaveRecord a,SkillTargetCategory c,bool excludeSelf){if(a==null||(excludeSelf&&a.actorId==source.actorId))return false;if(c==SkillTargetCategory.CORPSE)return !a.alive||a.hp<=0;if(!a.alive||a.hp<=0)return false;if(c==SkillTargetCategory.SELF)return a.actorId==source.actorId;if(c==SkillTargetCategory.ALLY)return a.actorId!=source.actorId;if(c==SkillTargetCategory.ENEMY)return a.actorId!=source.actorId;return false;}
+  static int Index(BattleSnapshotSaveRecord s,string id){var i=s.fixedActorOrder.IndexOf(id);return i<0?int.MaxValue:i;}
+  static SkillTargetResult Ok(string id)=>new SkillTargetResult{ok=true,targetIds=new List<string>{id}};static SkillTargetResult Fail(string r)=>new SkillTargetResult{ok=false,reason=r};
+ }
+}
