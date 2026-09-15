@@ -11,6 +11,11 @@ namespace GuildAdventure.Game.Save
         public int startTick,completeTick;
         public List<string> fixedTargetIds=new List<string>();
         public UsageConditionsSaveRecord usageConditions=new UsageConditionsSaveRecord();
+
+        // Unity runtime continuation extension. Values are frozen when C02 is created so
+        // a cast resumes/finishes with the same effective MP/CD/Cast values it reserved.
+        public bool hasEffectiveTiming;
+        public int effectiveMpCost,effectiveCastTicks,effectiveCooldownTicks;
     }
 
     [Serializable] public sealed class UsageConditionsSaveRecord
