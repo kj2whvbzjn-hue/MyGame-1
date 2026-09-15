@@ -7,21 +7,26 @@ namespace GuildAdventure.Game.Reward
 {
     public static class RewardInventoryProposal
     {
-        public static string Apply(GameSaveState save,IEnumerable<RewardItem> rewards,Func<RewardItem,string> instanceIdFactory)
+        public static string Apply(GameSaveState save, IEnumerable<RewardItem> rewards, Func<RewardItem, string> instanceIdFactory)
         {
-            if(save==null||rewards==null||instanceIdFactory==null)return "REWARD_INPUT_INVALID";
-            var inv=save.inventory;
-            foreach(var r in rewards)
+            if (save == null || rewards == null || instanceIdFactory == null) return "REWARD_INPUT_INVALID";
+            var inv = save.inventory;
+            foreach (var r in rewards)
             {
-                if(r==null||r.amount<=0)return "REWARD_ITEM_INVALID";
+                if (r == null || r.amount <= 0) return "REWARD_ITEM_INVALID";
                 // Keep reward units as one inventory instance unless the master later defines stack semantics.
-                var item=new InventoryItem{
-                    instanceId=instanceIdFactory(r),masterId=r.refId,kind=r.kind,amount=r.amount};
-                var proposal=InventoryWarehouse.Add(inv,item);
-                if(!proposal.ok)return proposal.reason;
-                inv=proposal.next;
+                var item = new InventoryItem
+                {
+                    instanceId = instanceIdFactory(r),
+                    masterId = r.refId,
+                    kind = r.kind,
+                    amount = r.amount
+                };
+                var proposal = InventoryWarehouse.Add(inv, item);
+                if (!proposal.ok) return proposal.reason;
+                inv = proposal.next;
             }
-            save.inventory=inv;
+            save.inventory = inv;
             return null;
         }
     }
@@ -29,24 +34,35 @@ namespace GuildAdventure.Game.Reward
     public static class RewardSaveTransaction
     {
         public static bool Commit(
-            SaveTransaction<GameSaveState> transaction,
-            GameSaveState current,
+            ISaveStore<GameSaveState> store,
             IEnumerable<RewardItem> rewards,
-            Func<RewardItem,string> instanceIdFactory,
+            Func<RewardItem, string> instanceIdFactory,
             out GameSaveState committed,
             out string error)
         {
-            committed=null; error=null;
-            if(transaction==null){error="SAVE_TRANSACTION_MISSING";return false;}
-            return transaction.Execute(
-                current,
-                draft=>{
-                    var e=RewardInventoryProposal.Apply(draft,rewards,instanceIdFactory);
-                    if(e!=null)throw new InvalidOperationException(e);
+            committed = null;
+            error = null;
+            if (store == null) { error = "SAVE_STORE_MISSING"; return false; }
+            if (rewards == null || instanceIdFactory == null) { error = "REWARD_INPUT_INVALID"; return false; }
+
+            string proposalError = null;
+            var result = SaveTransaction.Execute(
+                store,
+                draft =>
+                {
+                    proposalError = RewardInventoryProposal.Apply(draft, rewards, instanceIdFactory);
+                    return draft;
                 },
-                s=>GameSaveState.Validate(s)==null,
-                out committed,
-                out error);
+                draft => proposalError ?? GameSaveState.Validate(draft));
+
+            if (!result.ok)
+            {
+                error = result.reason;
+                return false;
+            }
+
+            committed = result.committed;
+            return true;
         }
     }
 }
