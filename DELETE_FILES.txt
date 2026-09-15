@@ -1,9 +1,0 @@
-Assets/Scripts/JsonDemo/DemoCameraFollow.cs
-Assets/Scripts/JsonDemo/DemoCollectible.cs
-Assets/Scripts/JsonDemo/DemoGameManager.cs
-Assets/Scripts/JsonDemo/DemoGoal.cs
-Assets/Scripts/JsonDemo/DemoHazard.cs
-Assets/Scripts/JsonDemo/DemoMovingPlatform.cs
-Assets/Scripts/JsonDemo/DemoPlayerController.cs
-Assets/Art/AutomationTest/AI_Test_Crystal.png
-Assets/Art/AutomationTest/AI_Test_Crystal.png.meta
