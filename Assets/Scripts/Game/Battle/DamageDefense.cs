@@ -10,7 +10,7 @@ namespace GuildAdventure.Game.Battle
     public sealed class FinalDamageResult { public double beforeFloorDamage; public int finalDamage; public double criticalMultiplier; }
     public sealed class BlockResult { public bool blocked; public int damage; }
     public sealed class BarrierResult { public int absorbed,hpDamageCandidate; public List<BarrierLayer> layers=new List<BarrierLayer>(); }
-    public sealed class HpCommitResult { public int hpBefore,hpAfter,actualHpLoss; }
+    public sealed class HpCommitResult { public int hpBefore,hpAfter,actualHpLoss; public bool fatalCandidate,fatalPrevented; }
 
     public static class DamageDefense
     {
@@ -72,11 +72,20 @@ namespace GuildAdventure.Game.Battle
             return new BarrierResult{absorbed=absorbed,hpDamageCandidate=remaining,layers=next};
         }
 
+        // The resolver is the synchronous ON_FATAL_DAMAGE interrupt boundary. HP is not committed until it returns.
         public static HpCommitResult CommitHp(int hp,int candidate,Func<int,int,int?> fatalResolver=null)
         {
             int before=Math.Max(0,hp),projected=before-Math.Max(0,candidate),after=Math.Max(0,projected);
-            if(projected<=0&&fatalResolver!=null){var resolved=fatalResolver(before,projected);if(resolved.HasValue)after=Math.Max(0,resolved.Value);}
-            return new HpCommitResult{hpBefore=before,hpAfter=after,actualHpLoss=Math.Max(0,before-after)};
+            bool fatal=projected<=0;
+            if(fatal&&fatalResolver!=null)
+            {
+                var resolved=fatalResolver(before,projected);
+                if(resolved.HasValue)after=Math.Max(0,resolved.Value);
+            }
+            return new HpCommitResult{
+                hpBefore=before,hpAfter=after,actualHpLoss=Math.Max(0,before-after),
+                fatalCandidate=fatal,fatalPrevented=fatal&&after>0
+            };
         }
     }
 }
