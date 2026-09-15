@@ -20,6 +20,7 @@ namespace GuildAdventure.Game.Battle
         public List<BarrierLayer> barriers=new List<BarrierLayer>();
         public Func<int,int,int?> fatalResolver;
         public double hpAbsorbRate,mpAbsorbRate,reflectionRate;
+        public IEnumerable<TriggerRegistration> triggerRegistrations;
     }
 
     public sealed class BattleStepResult
@@ -30,6 +31,7 @@ namespace GuildAdventure.Game.Battle
         public List<ResolvedHitSaveRecord> resolvedHits=new List<ResolvedHitSaveRecord>();
         public List<BarrierLayer> remainingBarriers=new List<BarrierLayer>();
         public int barrierAbsorbed,hpAbsorbed,mpAbsorbed,reflectedDamage;
+        public List<BattleTriggerDispatch> triggerDispatches=new List<BattleTriggerDispatch>();
     }
 
     public static class BattleStepExecutor
@@ -82,6 +84,8 @@ namespace GuildAdventure.Game.Battle
                 result.reflectedDamage+=one.reflectedDamage;
                 barriers=one.remainingBarriers;
                 snapshot.resolvedHits.Add(one.resolvedHit);
+                result.triggerDispatches.Add(BattleEffectLifecycle.DispatchResolvedHit(
+                    one.resolvedHit,p.triggerRegistrations,BattleEffectLifecycle.BuildFixedOrder(snapshot)));
 
                 if(!source.alive||source.hp<=0)break; // reflection can end the action.
             }
