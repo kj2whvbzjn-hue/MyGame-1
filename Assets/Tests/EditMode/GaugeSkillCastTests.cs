@@ -10,18 +10,20 @@ namespace GuildAdventure.Tests.EditMode
         [Test]
         public void Gauge_ReachesReadyAt100_AndKeepsOverflow()
         {
-            var s=new ActionGaugeState{actorId="A",gauge=95,speed=10};
-            ActionGauge.Advance(s);
-            Assert.IsTrue(ActionGauge.IsReady(s));
-            ActionGauge.Consume(s);
-            Assert.AreEqual(5,s.gauge,0.000001);
+            var cfg=new ActionGaugeSettings();
+            var s=new ActionGaugeState{actorId="A",gauge=95,agi=100};
+            ActionGauge.Advance(s,cfg);
+            Assert.IsTrue(ActionGauge.IsReady(s,cfg));
+            ActionGauge.ConsumeSuccessful(s,cfg);
+            Assert.AreEqual(0,s.gauge,0.000001);
         }
 
         [Test]
         public void CastingActor_DoesNotAdvanceActionGauge()
         {
-            var s=new ActionGaugeState{gauge=50,speed=10,casting=true};
-            ActionGauge.Advance(s);
+            var cfg=new ActionGaugeSettings();
+            var s=new ActionGaugeState{gauge=50,agi=10,casting=true};
+            ActionGauge.Advance(s,cfg);
             Assert.AreEqual(50,s.gauge);
         }
 

@@ -29,7 +29,14 @@ namespace GuildAdventure.Game.Save
         public List<CooldownSaveRecord> cooldowns=new List<CooldownSaveRecord>();
         public List<AppliedEffectSaveRecord> appliedEffects=new List<AppliedEffectSaveRecord>();
     }
-    [Serializable] public sealed class CastSaveRecord { public string skillId,targetId; public int remainingTicks; public bool active; }
+    [Serializable] public sealed class CastSaveRecord
+    {
+        public string reservationId,skillId,targetId;
+        public int startTick,completeTick,remainingTicks;
+        public bool active;
+        public List<string> fixedTargetIds=new List<string>();
+        public UsageConditionsSaveRecord usageConditions=new UsageConditionsSaveRecord();
+    }
     [Serializable] public sealed class CooldownSaveRecord { public string skillId; public int remainingTicks; }
     [Serializable] public sealed class AppliedEffectSaveRecord { public string instanceId,sourceId,effectId,kind; public int remainingTicks; public double value; public bool consumed; }
     [Serializable] public sealed class RngStreamSaveRecord { public string purpose; public int cursor; public List<double> recordedRolls=new List<double>(); }
