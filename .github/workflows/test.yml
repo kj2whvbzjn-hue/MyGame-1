@@ -85,6 +85,7 @@ jobs:
           rm -f test-results/latest/webgl-smoke.png
           rm -f test-results/latest/webgl-smoke-failure.png
           rm -f test-results/latest/webgl-report.json
+          rm -f test-results/latest/webgl-ai-review.jpg
 
           if [ -f playwright-artifacts/webgl-smoke.png ]; then
             cp playwright-artifacts/webgl-smoke.png test-results/latest/webgl-smoke.png
@@ -96,6 +97,10 @@ jobs:
 
           if [ -f playwright-artifacts/webgl-report.json ]; then
             cp playwright-artifacts/webgl-report.json test-results/latest/webgl-report.json
+          fi
+
+          if [ -f playwright-artifacts/webgl-ai-review.jpg ]; then
+            cp playwright-artifacts/webgl-ai-review.jpg test-results/latest/webgl-ai-review.jpg
           fi
 
           cat > test-results/latest/run-info.json <<EOF
@@ -118,9 +123,4 @@ jobs:
           fi
 
           git commit -m "chore: publish latest TEST evidence [skip ci]"
-
-          # Unity/WebGL build can leave unrelated tracked or untracked files in
-          # the runner workspace. Do not rebase that dirty working tree.
-          # Instead push the evidence commit directly. If main moved while TEST
-          # was running, fail safely rather than overwriting newer work.
           git push origin HEAD:"${GITHUB_REF_NAME}"

@@ -106,6 +106,16 @@ try {
     fullPage: true,
   });
 
+  // Compact JPEG dedicated to ChatGPT visual review.
+  // Keeping this much smaller than the full PNG makes it practical for the
+  // GitHub connector to return the complete image as base64 in one fetch.
+  await page.screenshot({
+    path: 'playwright-artifacts/webgl-ai-review.jpg',
+    type: 'jpeg',
+    quality: 45,
+    fullPage: true,
+  });
+
   await fs.writeFile(
     'playwright-artifacts/webgl-report.json',
     JSON.stringify({
@@ -117,7 +127,8 @@ try {
       consoleErrors,
       failedRequests,
       badResponses,
-      screenshot: 'webgl-smoke.png'
+      screenshot: 'webgl-smoke.png',
+      aiReviewImage: 'webgl-ai-review.jpg'
     }, null, 2)
   );
 
