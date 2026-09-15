@@ -1,7 +1,7 @@
 {
   "status": "PASS",
-  "url": "http://127.0.0.1:8080/?ci=30358c11e970dc4442565cb3d599e670b668055e",
-  "sourceSha": "30358c11e970dc4442565cb3d599e670b668055e",
+  "url": "http://127.0.0.1:8080/?ci=5c93e0c3bd5a6250c425d930ab664196c2aca1d6",
+  "sourceSha": "5c93e0c3bd5a6250c425d930ab664196c2aca1d6",
   "canvas": {
     "width": 960,
     "height": 600,
@@ -12,5 +12,6 @@
   "consoleErrors": [],
   "failedRequests": [],
   "badResponses": [],
-  "screenshot": "webgl-smoke.png"
+  "screenshot": "webgl-smoke.png",
+  "aiReviewImage": "webgl-ai-review.jpg"
 }
