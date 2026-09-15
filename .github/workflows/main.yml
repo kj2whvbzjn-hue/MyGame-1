@@ -37,6 +37,15 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      - name: Restore Unity Library cache
+        id: unity-library-cache
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: unity-library-${{ runner.os }}-webgl-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt', 'ProjectSettings/ProjectSettings.asset') }}
+          restore-keys: |
+            unity-library-${{ runner.os }}-webgl-
+
       - name: Run Unity FAST validation
         uses: game-ci/unity-builder@v4
         env:

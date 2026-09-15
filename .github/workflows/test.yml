@@ -30,6 +30,15 @@ jobs:
           fetch-depth: 0
           lfs: true
 
+      - name: Restore Unity Library cache
+        id: unity-library-cache
+        uses: actions/cache@v4
+        with:
+          path: Library
+          key: unity-library-${{ runner.os }}-webgl-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt', 'ProjectSettings/ProjectSettings.asset') }}
+          restore-keys: |
+            unity-library-${{ runner.os }}-webgl-
+
       - name: Build Unity WebGL
         uses: game-ci/unity-builder@v4
         env:
@@ -85,7 +94,6 @@ jobs:
           rm -f test-results/latest/webgl-smoke.png
           rm -f test-results/latest/webgl-smoke-failure.png
           rm -f test-results/latest/webgl-report.json
-          rm -f test-results/latest/webgl-ai-review.jpg
 
           if [ -f playwright-artifacts/webgl-smoke.png ]; then
             cp playwright-artifacts/webgl-smoke.png test-results/latest/webgl-smoke.png
@@ -97,10 +105,6 @@ jobs:
 
           if [ -f playwright-artifacts/webgl-report.json ]; then
             cp playwright-artifacts/webgl-report.json test-results/latest/webgl-report.json
-          fi
-
-          if [ -f playwright-artifacts/webgl-ai-review.jpg ]; then
-            cp playwright-artifacts/webgl-ai-review.jpg test-results/latest/webgl-ai-review.jpg
           fi
 
           cat > test-results/latest/run-info.json <<EOF
