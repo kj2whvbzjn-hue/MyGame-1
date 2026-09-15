@@ -29,7 +29,8 @@ namespace GuildAdventure.Game.Battle
             if(snapshot==null||request==null||request.skill==null||request.attack==null)return Fail("SKILL_ACTION_INPUT_INVALID");
             var actor=snapshot.actors.FirstOrDefault(x=>x.actorId==request.attack.sourceId);
             if(actor==null)return Fail("SKILL_ACTION_ACTOR_MISSING");
-            if(actor.actionGauge<ActionGauge.ReadyThreshold)return Fail("ACTION_GAUGE_NOT_READY");
+            var gaugeSettings=new ActionGaugeSettings();
+            if(actor.actionGauge<gaugeSettings.maxGauge)return Fail("ACTION_GAUGE_NOT_READY");
             if(actor.cast!=null&&actor.cast.active)return Fail("CAST_ALREADY_ACTIVE");
             if(actor.cooldowns.Any(x=>x.skillId==request.skill.id&&x.remainingTicks>0))return Fail("SKILL_COOLDOWN_ACTIVE");
 
@@ -41,7 +42,7 @@ namespace GuildAdventure.Game.Battle
             // Validate before mutation. Cost/gauge/cooldown are committed only after all preconditions above pass.
             SkillUseCondition.PayCost(request.skill,runtimeActor);
             actor.hp=runtimeActor.hp; actor.mp=runtimeActor.mp;
-            actor.actionGauge=Math.Max(0,actor.actionGauge-ActionGauge.ReadyThreshold);
+            actor.actionGauge=Math.Max(0,actor.actionGauge-gaugeSettings.SuccessfulActionConsume);
 
             if(request.skill.castTicks>0)
             {
@@ -59,7 +60,7 @@ namespace GuildAdventure.Game.Battle
                 // Roll back local cost/gauge if attack proposal itself fails before a terminal reservation is committed.
                 actor.hp += request.skill.resource==SkillResourceKind.HP?request.skill.resourceCost:0;
                 actor.mp += request.skill.resource==SkillResourceKind.MP?request.skill.resourceCost:0;
-                actor.actionGauge += ActionGauge.ReadyThreshold;
+                actor.actionGauge=Math.Min(gaugeSettings.maxGauge,actor.actionGauge+gaugeSettings.SuccessfulActionConsume);
                 return Fail(step.reason);
             }
             if(request.skill.cooldownTicks>0)

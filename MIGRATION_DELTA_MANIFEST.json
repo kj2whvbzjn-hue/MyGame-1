@@ -1,0 +1,14 @@
+{
+  "base": "MyGame-1-main(20260915-102954).zip",
+  "phase": "Battle Runtime / GS-14",
+  "changed": [
+    "Assets/Scripts/Game/Battle/ActionGauge.cs",
+    "Assets/Scripts/Game/Battle/SkillActionTransaction.cs",
+    "Assets/Tests/EditMode/ActionGaugeGs14Tests.cs"
+  ],
+  "notes": [
+    "GS-14 v1.1 exact base gauge formula implemented.",
+    "Gauge maximum, AI reevaluation ratio, success/failure consumption and Studio coefficients are settings-driven.",
+    "No Pages/UI changes."
+  ]
+}
