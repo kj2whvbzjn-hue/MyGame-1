@@ -21,20 +21,13 @@ namespace GuildAdventure.Game.Battle
    if(string.IsNullOrWhiteSpace(context.actionId))context.actionId=trigger+":"+snapshot.tick;
    var fixedOrder=BattleEffectLifecycle.BuildFixedOrder(snapshot);
    var result=new BattleLifecycleTriggerResult();
-   if(trigger==TriggerEvent.WHILE_SOURCE_ALIVE)
+   foreach(var actorId in snapshot.fixedActorOrder)
    {
-    foreach(var actorId in snapshot.fixedActorOrder)
-    {
-     var actor=snapshot.actors.Find(x=>x.actorId==actorId);
-     if(actor==null||!actor.alive||actor.hp<=0)continue;
-     var dispatch=BattleEffectLifecycle.DispatchEvent(trigger,actorId,actorId,registrations,fixedOrder,context.actionId,null,context,actorId);
-     dispatch.registrations.RemoveAll(x=>x.ownerId!=actorId);
-     result.dispatches.Add(dispatch);
-    }
-   }
-   else
-   {
-    result.dispatches.Add(BattleEffectLifecycle.DispatchEvent(trigger,null,null,registrations,fixedOrder,context.actionId,null,context,null));
+    var actor=snapshot.actors.Find(x=>x.actorId==actorId);
+    if(actor==null||!actor.alive||actor.hp<=0)continue;
+    var dispatch=BattleEffectLifecycle.DispatchEvent(trigger,actorId,actorId,registrations,fixedOrder,context.actionId,null,context,actorId);
+    dispatch.registrations.RemoveAll(x=>!string.Equals(x.ownerId,actorId,StringComparison.Ordinal));
+    if(dispatch.registrations.Count>0)result.dispatches.Add(dispatch);
    }
    TriggerActivationRuntime.EnqueueBatch(context,result.dispatches);
    var drain=TriggerActivationRuntime.Drain(context,passiveTriggerRng,executeReactive);
