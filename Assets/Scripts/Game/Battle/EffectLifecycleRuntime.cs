@@ -2,75 +2,30 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using GuildAdventure.Game.Save;
-
 namespace GuildAdventure.Game.Battle
 {
-    public enum EffectLifecycleKind { STATUS,DOT,BUFF,DEBUFF,BARRIER }
-    public enum EffectStackRule { UNIQUE_REFRESH,STACK_SUM,STACK_HIGHEST,FIFO }
-
-    public sealed class EffectApplyRequest
-    {
-        public string instanceId,sourceId,effectId;
-        public EffectLifecycleKind kind;
-        public int baseDurationTicks;
-        public double value,statusResistancePercent;
-        public int appliedTick,sequence,maxStacks=1;
-    }
-    public sealed class EffectApplyResult { public bool ok; public string reason; public AppliedEffectSaveRecord applied; public int effectiveDurationTicks; }
-
-    public static class EffectLifecycleRuntime
-    {
-        public static EffectStackRule Rule(EffectLifecycleKind kind,string effectId)
-        {
-            if(kind==EffectLifecycleKind.STATUS)return EffectStackRule.UNIQUE_REFRESH;
-            if(kind==EffectLifecycleKind.DOT)return EffectStackRule.STACK_SUM;
-            if(kind==EffectLifecycleKind.BARRIER)return EffectStackRule.FIFO;
-            return EffectStackRule.STACK_HIGHEST;
-        }
-
-        public static int EffectiveStatusDuration(int baseTicks,double resistancePercent)
-        {
-            var resistance=Math.Max(0,Math.Min(75,resistancePercent));
-            return Math.Max(0,(int)Math.Ceiling(Math.Max(0,baseTicks)*(1-resistance/100d)));
-        }
-
-        public static EffectApplyResult Apply(BattleActorSaveRecord actor,EffectApplyRequest request)
-        {
-            if(actor==null||request==null)return Fail("EFFECT_APPLY_INPUT_INVALID");
-            if(string.IsNullOrWhiteSpace(request.instanceId)||string.IsNullOrWhiteSpace(request.effectId))return Fail("EFFECT_ID_MISSING");
-            actor.appliedEffects=actor.appliedEffects??new List<AppliedEffectSaveRecord>();
-            var duration=request.kind==EffectLifecycleKind.STATUS?EffectiveStatusDuration(request.baseDurationTicks,request.statusResistancePercent):Math.Max(0,request.baseDurationTicks);
-            var rule=Rule(request.kind,request.effectId);var same=actor.appliedEffects.Where(x=>x!=null&&!x.consumed&&x.effectId==request.effectId).ToList();
-            if(rule==EffectStackRule.UNIQUE_REFRESH&&same.Count>0)
-            {
-                var current=same[0];current.remainingTicks=duration;current.value=request.value;current.sourceId=request.sourceId;return new EffectApplyResult{ok=true,applied=current,effectiveDurationTicks=duration};
-            }
-            if(rule==EffectStackRule.STACK_SUM&&same.Count>=Math.Max(1,request.maxStacks))
-            {
-                // GS-18 DOT max stack: preserve existing snapshots when full; caller may treat this as no-op.
-                return Fail("EFFECT_STACK_LIMIT_REACHED");
-            }
-            var row=new AppliedEffectSaveRecord{instanceId=request.instanceId,sourceId=request.sourceId,effectId=request.effectId,kind=request.kind.ToString(),remainingTicks=duration,value=request.value,appliedTick=request.appliedTick,sequence=request.sequence};
-            actor.appliedEffects.Add(row);return new EffectApplyResult{ok=true,applied=row,effectiveDurationTicks=duration};
-        }
-
-        public static double EffectiveValue(BattleActorSaveRecord actor,string effectId,EffectLifecycleKind kind)
-        {
-            var rows=(actor?.appliedEffects??new List<AppliedEffectSaveRecord>()).Where(x=>x!=null&&!x.consumed&&x.effectId==effectId).ToList();
-            if(kind==EffectLifecycleKind.BUFF||kind==EffectLifecycleKind.DEBUFF)return rows.Count==0?0:rows.Max(x=>x.value);
-            return rows.Sum(x=>x.value);
-        }
-
-        public static AppliedEffectSaveRecord RemoveOldestStatus(BattleActorSaveRecord actor,string effectId=null)
-        {
-            var row=(actor?.appliedEffects??new List<AppliedEffectSaveRecord>()).Where(x=>x!=null&&!x.consumed&&x.kind==EffectLifecycleKind.STATUS.ToString()&&(effectId==null||x.effectId==effectId))
-                .OrderBy(x=>x.appliedTick).ThenBy(x=>x.sequence).ThenBy(x=>x.instanceId,StringComparer.Ordinal).FirstOrDefault();
-            if(row!=null){row.consumed=true;actor.appliedEffects.Remove(row);}return row;
-        }
-
-        public static int DotDamage(double snapshotPower)=>Math.Max(0,(int)Math.Floor(snapshotPower));
-        public static int HealAmount(int maxHp,double powerPercent,double magicIncreaseMultiplier=1d)=>Math.Max(0,(int)Math.Ceiling(Math.Floor(Math.Max(0,maxHp)*Math.Max(0,powerPercent)/100d)*Math.Max(0,magicIncreaseMultiplier))));
-        public static int BarrierAmount(int maxHp,double powerPercent)=>Math.Max(0,(int)Math.Floor(Math.Max(0,maxHp)*Math.Max(0,powerPercent)/100d));
-        static EffectApplyResult Fail(string reason)=>new EffectApplyResult{ok=false,reason=reason};
-    }
+ public enum EffectLifecycleKind { STATUS,DOT,BUFF,DEBUFF,BARRIER }
+ public enum EffectStackRule { UNIQUE_REFRESH,STACK_SUM,STACK_HIGHEST,FIFO }
+ public sealed class EffectApplyRequest{public string instanceId,sourceId,effectId;public EffectLifecycleKind kind;public int baseDurationTicks;public double value,statusResistancePercent;public int appliedTick,sequence,maxStacks;}
+ public sealed class EffectApplyResult{public bool ok;public string reason;public AppliedEffectSaveRecord applied;public int effectiveDurationTicks;}
+ public static class EffectLifecycleRuntime
+ {
+  static readonly HashSet<string> NormalCleanseStatuses=new HashSet<string>(new[]{"STUN","ACTION_DISABLED"},StringComparer.Ordinal);
+  public static EffectStackRule Rule(EffectLifecycleKind kind,string effectId){if(kind==EffectLifecycleKind.STATUS)return EffectStackRule.UNIQUE_REFRESH;if(kind==EffectLifecycleKind.DOT)return EffectStackRule.STACK_SUM;if(kind==EffectLifecycleKind.BARRIER)return EffectStackRule.FIFO;return EffectStackRule.STACK_HIGHEST;}
+  public static int EffectiveStatusDuration(int baseTicks,double resistancePercent){var resistance=Math.Max(0,Math.Min(75,resistancePercent));return Math.Max(0,(int)Math.Ceiling(Math.Max(0,baseTicks)*(1-resistance/100d)));}
+  public static EffectApplyResult Apply(BattleActorSaveRecord actor,EffectApplyRequest request)
+  {
+   if(actor==null||request==null)return Fail("EFFECT_APPLY_INPUT_INVALID");if(string.IsNullOrWhiteSpace(request.instanceId)||string.IsNullOrWhiteSpace(request.effectId))return Fail("EFFECT_ID_MISSING");actor.appliedEffects=actor.appliedEffects??new List<AppliedEffectSaveRecord>();var duration=request.kind==EffectLifecycleKind.STATUS?EffectiveStatusDuration(request.baseDurationTicks,request.statusResistancePercent):Math.Max(0,request.baseDurationTicks);var rule=Rule(request.kind,request.effectId);var same=actor.appliedEffects.Where(x=>x!=null&&!x.consumed&&x.effectId==request.effectId).OrderBy(x=>x.appliedTick).ThenBy(x=>x.sequence).ThenBy(x=>x.instanceId,StringComparer.Ordinal).ToList();
+   if(rule==EffectStackRule.UNIQUE_REFRESH&&same.Count>0){var current=same[0];current.remainingTicks=duration;current.value=request.value;current.sourceId=request.sourceId;current.appliedTick=request.appliedTick;current.sequence=request.sequence;return new EffectApplyResult{ok=true,applied=current,effectiveDurationTicks=duration};}
+   var maxStacks=request.maxStacks>0?request.maxStacks:(request.kind==EffectLifecycleKind.DOT?5:int.MaxValue);if(rule==EffectStackRule.STACK_SUM&&same.Count>=maxStacks)return Fail("EFFECT_STACK_LIMIT_REACHED");
+   if(rule==EffectStackRule.STACK_HIGHEST&&same.Count>0){var current=same.OrderByDescending(x=>x.value).ThenByDescending(x=>x.remainingTicks).First();if(request.value>current.value){current.value=request.value;current.remainingTicks=duration;current.sourceId=request.sourceId;current.appliedTick=request.appliedTick;current.sequence=request.sequence;}else if(request.value==current.value)current.remainingTicks=Math.Max(current.remainingTicks,duration);return new EffectApplyResult{ok=true,applied=current,effectiveDurationTicks=current.remainingTicks};}
+   var row=new AppliedEffectSaveRecord{instanceId=request.instanceId,sourceId=request.sourceId,effectId=request.effectId,kind=request.kind.ToString(),remainingTicks=duration,value=request.value,appliedTick=request.appliedTick,sequence=request.sequence};actor.appliedEffects.Add(row);return new EffectApplyResult{ok=true,applied=row,effectiveDurationTicks=duration};
+  }
+  public static double EffectiveValue(BattleActorSaveRecord actor,string effectId,EffectLifecycleKind kind){var rows=(actor?.appliedEffects??new List<AppliedEffectSaveRecord>()).Where(x=>x!=null&&!x.consumed&&x.effectId==effectId).ToList();if(kind==EffectLifecycleKind.BUFF||kind==EffectLifecycleKind.DEBUFF)return rows.Count==0?0:rows.Max(x=>x.value);return rows.Sum(x=>x.value);}
+  public static AppliedEffectSaveRecord RemoveOldestStatus(BattleActorSaveRecord actor,string effectId=null,bool normalCleanse=true){var row=(actor?.appliedEffects??new List<AppliedEffectSaveRecord>()).Where(x=>x!=null&&!x.consumed&&x.kind==EffectLifecycleKind.STATUS.ToString()&&(effectId==null||x.effectId==effectId)&&(!normalCleanse||NormalCleanseStatuses.Contains(x.effectId))).OrderBy(x=>x.appliedTick).ThenBy(x=>x.sequence).ThenBy(x=>x.instanceId,StringComparer.Ordinal).FirstOrDefault();if(row!=null){row.consumed=true;actor.appliedEffects.Remove(row);}return row;}
+  public static int DotDamage(double snapshotPower)=>Math.Max(0,(int)Math.Floor(snapshotPower));
+  public static int HealAmount(int maxHp,double powerPercent,double magicIncreaseMultiplier=1d)=>Math.Max(0,(int)Math.Ceiling(Math.Floor(Math.Max(0,maxHp)*Math.Max(0,powerPercent)/100d)*Math.Max(0,magicIncreaseMultiplier))));
+  public static int BarrierAmount(int maxHp,double powerPercent)=>Math.Max(0,(int)Math.Floor(Math.Max(0,maxHp)*Math.Max(0,powerPercent)/100d));
+  static EffectApplyResult Fail(string reason)=>new EffectApplyResult{ok=false,reason=reason};
+ }
 }
