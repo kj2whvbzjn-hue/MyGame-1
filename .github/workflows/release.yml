@@ -32,14 +32,16 @@ jobs:
           fetch-depth: 0
           lfs: true
 
-      - name: Restore Unity Library cache
-        id: unity-library-cache
+      # Cache only downloaded Unity packages.
+      # Whole-Library restore caused FAST exit code 137 on this project.
+      - name: Restore Unity PackageCache
+        id: unity-package-cache
         uses: actions/cache@v4
         with:
-          path: Library
-          key: unity-library-${{ runner.os }}-webgl-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt', 'ProjectSettings/ProjectSettings.asset') }}
+          path: Library/PackageCache
+          key: unity-packagecache-${{ runner.os }}-${{ hashFiles('Packages/manifest.json', 'Packages/packages-lock.json', 'ProjectSettings/ProjectVersion.txt') }}
           restore-keys: |
-            unity-library-${{ runner.os }}-webgl-
+            unity-packagecache-${{ runner.os }}-
 
       - name: Build Unity WebGL
         uses: game-ci/unity-builder@v4
