@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "url": "http://127.0.0.1:8080/?ci=30358c11e970dc4442565cb3d599e670b668055e",
+  "sourceSha": "30358c11e970dc4442565cb3d599e670b668055e",
+  "canvas": {
+    "width": 960,
+    "height": 600,
+    "clientWidth": 960,
+    "clientHeight": 600
+  },
+  "pageErrors": [],
+  "consoleErrors": [],
+  "failedRequests": [],
+  "badResponses": [],
+  "screenshot": "webgl-smoke.png"
+}
