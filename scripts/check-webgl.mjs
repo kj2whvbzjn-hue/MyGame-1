@@ -106,6 +106,21 @@ try {
     fullPage: true,
   });
 
+  await fs.writeFile(
+    'playwright-artifacts/webgl-report.json',
+    JSON.stringify({
+      status: 'PASS',
+      url,
+      sourceSha: process.env.GITHUB_SHA ?? null,
+      canvas: canvasState,
+      pageErrors,
+      consoleErrors,
+      failedRequests,
+      badResponses,
+      screenshot: 'webgl-smoke.png'
+    }, null, 2)
+  );
+
   console.log('PASS: Unity WebGL smoke test passed.');
   console.log(`Canvas: ${JSON.stringify(canvasState)}`);
 

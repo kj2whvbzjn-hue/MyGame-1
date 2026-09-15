@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   test:
@@ -77,3 +77,46 @@ jobs:
           path: playwright-artifacts/
           if-no-files-found: ignore
           retention-days: 14
+
+      - name: Publish latest TEST evidence for AI review
+        if: always()
+        run: |
+          mkdir -p test-results/latest
+          rm -f test-results/latest/webgl-smoke.png
+          rm -f test-results/latest/webgl-smoke-failure.png
+          rm -f test-results/latest/webgl-report.json
+
+          if [ -f playwright-artifacts/webgl-smoke.png ]; then
+            cp playwright-artifacts/webgl-smoke.png test-results/latest/webgl-smoke.png
+          fi
+
+          if [ -f playwright-artifacts/webgl-smoke-failure.png ]; then
+            cp playwright-artifacts/webgl-smoke-failure.png test-results/latest/webgl-smoke-failure.png
+          fi
+
+          if [ -f playwright-artifacts/webgl-report.json ]; then
+            cp playwright-artifacts/webgl-report.json test-results/latest/webgl-report.json
+          fi
+
+          cat > test-results/latest/run-info.json <<EOF
+          {
+            "workflow": "Unity TEST - Local WebGL",
+            "run_id": "${GITHUB_RUN_ID}",
+            "source_sha": "${GITHUB_SHA}",
+            "repository": "${GITHUB_REPOSITORY}",
+            "result_files": "See this directory"
+          }
+          EOF
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test-results/latest
+
+          if git diff --cached --quiet; then
+            echo "No TEST evidence changes to commit."
+            exit 0
+          fi
+
+          git commit -m "chore: publish latest TEST evidence [skip ci]"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
