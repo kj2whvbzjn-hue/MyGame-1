@@ -48,6 +48,19 @@ jobs:
           restore-keys: |
             unity-packagecache-${{ runner.os }}-
 
+      - name: FAST diagnostics before Unity
+        shell: bash
+        run: |
+          echo '=== FAST PERFORMANCE DIAGNOSTICS: BEFORE UNITY ==='
+          echo "PackageCache cache-hit: ${{ steps.unity-package-cache.outputs.cache-hit }}"
+          echo 'Disk:'
+          df -h . || true
+          echo 'Library directories before Unity:'
+          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB; do
+            if [ -e "$d" ]; then du -sh "$d" || true; else echo "MISSING $d"; fi
+          done
+          echo '================================================='
+
       - name: Run Unity FAST validation
         uses: game-ci/unity-builder@v4
         env:
@@ -57,3 +70,32 @@ jobs:
         with:
           targetPlatform: WebGL
           buildMethod: AutomationEntry.ValidateOnly
+
+      - name: FAST diagnostics after Unity
+        if: always()
+        shell: bash
+        run: |
+          echo '=== FAST PERFORMANCE DIAGNOSTICS: AFTER UNITY ==='
+          echo 'Library directory sizes:'
+          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB; do
+            if [ -e "$d" ]; then du -sh "$d" || true; else echo "MISSING $d"; fi
+          done
+          echo
+          echo 'Largest Library subdirectories:'
+          if [ -d Library ]; then
+            du -h -d 2 Library 2>/dev/null | sort -h | tail -30 || true
+          else
+            echo 'MISSING Library'
+          fi
+          echo
+          echo 'Unity/Bee timing and rebuild clues found in logs:'
+          LOGS=""
+          for f in             "$GITHUB_WORKSPACE/Library/Bee/bee_backend.info"             "$GITHUB_WORKSPACE/Library/Bee/bee_backend.log"             "$GITHUB_WORKSPACE/Library/LastSceneManagerSetup.txt"             "$GITHUB_WORKSPACE/Editor.log"             "$HOME/.config/unity3d/Editor.log"; do
+            [ -f "$f" ] && LOGS="$LOGS $f"
+          done
+          if [ -n "$LOGS" ]; then
+            grep -Eai 'Import|Refresh|compile|compil|Bee|Tundra|IL2CPP|AutomationEntry|ValidateOnly|domain reload|reload assemblies|script assembl|cache hit|cache miss|requires additional run|seconds|ms' $LOGS 2>/dev/null | tail -250 || true
+          else
+            echo 'No readable Unity timing log file found outside the unity-builder step.'
+          fi
+          echo '================================================'
