@@ -1,0 +1,298 @@
+{
+  "schema_version": "1.0.0",
+  "data_version": "0.1.0-draft",
+  "generated_at": "2026-09-10T07:54:23.509Z",
+  "generated_by": "GK Studio vGKS-B904",
+  "data": [
+    {
+      "id": "ADV-0001",
+      "name": "冒険バランス既定",
+      "status": "active",
+      "enabled": true,
+      "tags": [],
+      "params": {
+        "encounter": {
+          "default_spawn_weight": 1,
+          "max_units": 100
+        },
+        "reward_scaling": {
+          "bonus_per_budget": 0.02,
+          "min_multiplier": 1,
+          "max_multiplier": null,
+          "amount_rounding": "floor",
+          "rarity_weight_bonus_per_budget": {
+            "common": 0,
+            "uncommon": 0.002,
+            "rare": 0.005,
+            "epic": 0.01,
+            "legendary": 0.02
+          }
+        },
+        "exploration": {
+          "default_base_weight": 1,
+          "default_success_rate": 1,
+          "min_success_rate": 0,
+          "max_success_rate": 1,
+          "rarity_budget_reference": 0,
+          "rarity_weight_bonus_per_budget": {
+            "common": 0,
+            "uncommon": 0.002,
+            "rare": 0.005,
+            "epic": 0.01,
+            "legendary": 0.02
+          }
+        },
+        "fixed_formation_scaling": {
+          "hp_per_ratio": 1,
+          "attack_per_ratio": 1,
+          "agi_per_ratio": 0,
+          "min_multiplier": 1,
+          "max_multiplier": null
+        },
+        "game_runtime": {
+          "character": {
+            "initial_level": 1,
+            "max_level": 50,
+            "initial_hp": 100,
+            "initial_mp": 30,
+            "initial_stats": {
+              "STR": 10,
+              "VIT": 10,
+              "AGI": 10,
+              "DEX": 10,
+              "INT": 10,
+              "MND": 10,
+              "LUK": 10
+            },
+            "party_max_size": 6,
+            "starter_skill_ids": [],
+            "starter_equipped_skill_id": "",
+            "initial_skill_points": 0,
+            "starter_passive_ids": [],
+            "initial_formation_position": "FRONTLINE"
+          },
+          "growth": {
+            "rule_revision": "FORMAL-GROWTH-DATA-2",
+            "outcomes_by_aptitude": {
+              "3": [
+                {
+                  "amount": 0,
+                  "weight": 70
+                },
+                {
+                  "amount": 1,
+                  "weight": 30
+                }
+              ],
+              "4": [
+                {
+                  "amount": 0,
+                  "weight": 60
+                },
+                {
+                  "amount": 1,
+                  "weight": 40
+                }
+              ],
+              "7": [
+                {
+                  "amount": 0,
+                  "weight": 30
+                },
+                {
+                  "amount": 1,
+                  "weight": 70
+                }
+              ],
+              "8": [
+                {
+                  "amount": 0,
+                  "weight": 20
+                },
+                {
+                  "amount": 1,
+                  "weight": 80
+                }
+              ],
+              "10": [
+                {
+                  "amount": 1,
+                  "weight": 100
+                }
+              ],
+              "13": [
+                {
+                  "amount": 1,
+                  "weight": 70
+                },
+                {
+                  "amount": 2,
+                  "weight": 30
+                }
+              ],
+              "15": [
+                {
+                  "amount": 1,
+                  "weight": 50
+                },
+                {
+                  "amount": 2,
+                  "weight": 50
+                }
+              ]
+            },
+            "rank_by_aptitude": {
+              "7": "C",
+              "8": "C",
+              "9": "B",
+              "10": "B",
+              "11": "B",
+              "12": "A",
+              "13": "A"
+            }
+          },
+          "new_game": {
+            "starting_gold": 500,
+            "starter_roster": [
+              {
+                "name": "アルト",
+                "job_id": "JOB-0001",
+                "starter_equipment": {
+                  "weapon1": "EQP-0012",
+                  "head": "EQP-0155",
+                  "armor": "EQP-0144",
+                  "gloves": "EQP-0166",
+                  "feet": "EQP-0177"
+                }
+              },
+              {
+                "name": "セリア",
+                "job_id": "JOB-0002",
+                "starter_equipment": {
+                  "weapon1": "EQP-0001",
+                  "weapon2": "EQP-0122",
+                  "head": "EQP-0155",
+                  "armor": "EQP-0144",
+                  "gloves": "EQP-0166",
+                  "feet": "EQP-0177"
+                }
+              },
+              {
+                "name": "ロウ",
+                "job_id": "JOB-0003",
+                "starter_equipment": {
+                  "weapon1": "EQP-0023",
+                  "head": "EQP-0199",
+                  "armor": "EQP-0188",
+                  "gloves": "EQP-0210",
+                  "feet": "EQP-0221"
+                }
+              },
+              {
+                "name": "フィン",
+                "job_id": "JOB-0004",
+                "starter_equipment": {
+                  "weapon1": "EQP-0067",
+                  "weapon2": "EQP-0133",
+                  "head": "EQP-0199",
+                  "armor": "EQP-0188",
+                  "gloves": "EQP-0210",
+                  "feet": "EQP-0221"
+                }
+              },
+              {
+                "name": "ミナ",
+                "job_id": "JOB-0005",
+                "starter_equipment": {
+                  "weapon1": "EQP-0089",
+                  "head": "EQP-0243",
+                  "armor": "EQP-0232",
+                  "gloves": "EQP-0254",
+                  "feet": "EQP-0265"
+                }
+              },
+              {
+                "name": "エル",
+                "job_id": "JOB-0006",
+                "starter_equipment": {
+                  "weapon1": "EQP-0100",
+                  "head": "EQP-0243",
+                  "armor": "EQP-0232",
+                  "gloves": "EQP-0254",
+                  "feet": "EQP-0265"
+                }
+              }
+            ],
+            "party_member_indexes": [
+              0,
+              1,
+              2,
+              3,
+              4,
+              5
+            ],
+            "starter_inventory_ids": []
+          },
+          "rarities": {
+            "common": {
+              "label": "★",
+              "name": "一般"
+            },
+            "uncommon": {
+              "label": "★★",
+              "name": "上質"
+            },
+            "rare": {
+              "label": "★★★",
+              "name": "希少"
+            },
+            "epic": {
+              "label": "★★★★",
+              "name": "英雄"
+            },
+            "legendary": {
+              "label": "★★★★★",
+              "name": "伝説"
+            }
+          },
+          "battle_flow": {
+            "action_gauge": {
+              "max": 100,
+              "ai_reevaluation_ratio": 0.1,
+              "successful_action_consume_ratio": 1,
+              "failed_execution_consume_ratio": 0.5
+            },
+            "casting": {
+              "default_skill_duration_ticks": 0
+            }
+          },
+          "equipment_rules": {
+            "weapon": {
+              "str_requirement_two_hand_multiplier": 2
+            }
+          },
+          "skill_progression": {
+            "skill_points_per_level": 1,
+            "acquisition_cost": {
+              "skill_default": 1,
+              "passive_default": 1,
+              "skill_by_id": {},
+              "passive_by_id": {}
+            },
+            "respec_gold": {
+              "skill": 50,
+              "passive": 50,
+              "all": 200
+            }
+          },
+          "skill_loadout": {
+            "active_skill_slots": 5,
+            "passive_slots": 5
+          }
+        }
+      },
+      "description": "冒険・キャラクター・成長・新規ゲーム・表示レアリティ・戦闘フローの調整値。Game側へ固定せずStudioデータから変更します。Player初期HP/MPはgame_runtime.character.initial_hp / initial_mpを正規ownerとし、旧battle_actor派生式は使用しません。武器2枠・STR両手持ち緩和倍率を調整可能にします。 Skill/Passive習得は共通Skill Pointを使用し、Level Up時Skill Point付与量・習得必要量・Respec Gold額はgame_runtime.skill_progressionをBalance正本とします。 Player初期Skill Point・初期Passive・初期Formationはgame_runtime.characterのData Ownerから取得します。 Skill LoadoutのActive Skill枠数・Passive枠数はgame_runtime.skill_loadoutのBalance正本から取得します。",
+      "updated_at": "2026-09-10T16:32:26+09:00"
+    }
+  ]
+}

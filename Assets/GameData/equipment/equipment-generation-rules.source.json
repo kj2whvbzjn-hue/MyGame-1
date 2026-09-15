@@ -1,0 +1,101 @@
+{
+  "schema": "GKS_EQUIPMENT_GENERATION_RULES",
+  "generation_rules_version": "1.9.0",
+  "source_spec_version": "Equipment v2.1 + Magic Accuracy/Resistance Equipment Contribution + Weapon Critical/LUK + Bow/Quiver + Shield Block Current Contract",
+  "balance_value_policy": "All tunable numeric values are loaded from Active Balance Config; Generation Rules define structure only.",
+  "flow": [
+    "manual_or_ai_json_input",
+    "active_project_generation_config",
+    "base_item_calculation",
+    "validator",
+    "preview",
+    "generation_json_output",
+    "balance_test_iteration",
+    "management_data_exchange_import_after_completion"
+  ],
+  "weapon": {
+    "required_fields": [
+      "required_str",
+      "required_dex",
+      "required_int"
+    ],
+    "performance_fields": [
+      "attack",
+      "accuracy",
+      "magic_accuracy",
+      "magic_weapon_bonus",
+      "weapon_critical_rate"
+    ],
+    "shield_performance_fields": [
+      "block_rate",
+      "block_damage_cut_rate"
+    ]
+  },
+  "armor": {
+    "required_inputs": [
+      "base_item_type",
+      "armor_slot",
+      "item_level"
+    ],
+    "required_fields": [
+      "required_vit",
+      "required_mnd",
+      "required_agi"
+    ],
+    "performance_fields": [
+      "hp_bonus",
+      "mp_bonus",
+      "evasion",
+      "magic_resistance"
+    ]
+  },
+  "forbidden_fields": [
+    "base_attack",
+    "base_defense",
+    "defense"
+  ],
+  "requirements_are_equip_gate_only": true,
+  "pipeline_modes": [
+    "single",
+    "batch_simulation",
+    "batch_generation",
+    "ai_request",
+    "json_file_import",
+    "generation_work_export",
+    "management_data_exchange_export",
+    "weapon_batch",
+    "armor_batch",
+    "base_name_preset",
+    "accessory_batch"
+  ],
+  "batch_simulation_writes_master": false,
+  "ai_numeric_authority": "forbidden",
+  "ui_master_direct_write": false,
+  "registration_entrypoint": "management_import_only",
+  "base_item_name_sets": {
+    "separate_by_kind": true,
+    "preset_support": true,
+    "project_persistence": "equipment_generation.base_name_sets",
+    "item_level_extension_from_confirmed_sets": true
+  },
+  "accessory": {
+    "base_item_types": [
+      "アミュレット",
+      "指輪",
+      "ベルト"
+    ],
+    "equip_slots": {
+      "アミュレット": "amulet",
+      "指輪": "ring",
+      "ベルト": "belt"
+    },
+    "requirement_policy": "item_level_only_no_stat_threshold",
+    "base_rarity": "NORMAL",
+    "base_mod_count": 0,
+    "name_sets": {
+      "アミュレット": "アミュレット・指輪",
+      "指輪": "アミュレット・指輪",
+      "ベルト": "ベルト"
+    }
+  }
+}

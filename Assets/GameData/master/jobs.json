@@ -1,0 +1,134 @@
+{
+  "schema_version": "1.0.0",
+  "data_version": "0.1.0-draft",
+  "generated_at": "2026-09-07T10:05:18.360Z",
+  "generated_by": "GK Studio vGKS-B884",
+  "data": [
+    {
+      "id": "JOB-0001",
+      "name": "剣士",
+      "status": "active",
+      "tags": [],
+      "params": {
+        "aptitudes": {
+          "STR": 15,
+          "VIT": 13,
+          "AGI": 4,
+          "DEX": 10,
+          "INT": 7,
+          "MND": 8,
+          "LUK": 3
+        }
+      },
+      "description": "職業適性値。Game RuntimeはこのStudio Masterを参照し、コード内固定値を使用しません。"
+    },
+    {
+      "id": "JOB-0002",
+      "name": "騎士",
+      "status": "active",
+      "tags": [],
+      "params": {
+        "aptitudes": {
+          "STR": 10,
+          "VIT": 15,
+          "AGI": 3,
+          "DEX": 7,
+          "INT": 8,
+          "MND": 13,
+          "LUK": 4
+        }
+      },
+      "description": "職業適性値。Game RuntimeはこのStudio Masterを参照し、コード内固定値を使用しません。"
+    },
+    {
+      "id": "JOB-0003",
+      "name": "盗賊",
+      "status": "active",
+      "tags": [],
+      "params": {
+        "aptitudes": {
+          "STR": 7,
+          "VIT": 8,
+          "AGI": 15,
+          "DEX": 13,
+          "INT": 3,
+          "MND": 4,
+          "LUK": 10
+        }
+      },
+      "description": "職業適性値。Game RuntimeはこのStudio Masterを参照し、コード内固定値を使用しません。"
+    },
+    {
+      "id": "JOB-0004",
+      "name": "狩人",
+      "status": "active",
+      "tags": [],
+      "params": {
+        "aptitudes": {
+          "STR": 8,
+          "VIT": 7,
+          "AGI": 10,
+          "DEX": 15,
+          "INT": 4,
+          "MND": 3,
+          "LUK": 13
+        }
+      },
+      "description": "職業適性値。Game RuntimeはこのStudio Masterを参照し、コード内固定値を使用しません。"
+    },
+    {
+      "id": "JOB-0005",
+      "name": "魔術師",
+      "status": "active",
+      "tags": [],
+      "params": {
+        "aptitudes": {
+          "STR": 4,
+          "VIT": 3,
+          "AGI": 8,
+          "DEX": 10,
+          "INT": 15,
+          "MND": 13,
+          "LUK": 7
+        }
+      },
+      "description": "職業適性値。Game RuntimeはこのStudio Masterを参照し、コード内固定値を使用しません。"
+    },
+    {
+      "id": "JOB-0006",
+      "name": "神官",
+      "status": "active",
+      "tags": [],
+      "params": {
+        "aptitudes": {
+          "STR": 3,
+          "VIT": 4,
+          "AGI": 10,
+          "DEX": 7,
+          "INT": 13,
+          "MND": 15,
+          "LUK": 8
+        }
+      },
+      "description": "職業適性値。Game RuntimeはこのStudio Masterを参照し、コード内固定値を使用しません。"
+    },
+    {
+      "id": "JOB-0007",
+      "name": "冒険家",
+      "status": "active",
+      "tags": [],
+      "params": {
+        "aptitudes": {
+          "STR": 13,
+          "VIT": 10,
+          "AGI": 8,
+          "DEX": 3,
+          "INT": 4,
+          "MND": 7,
+          "LUK": 15
+        }
+      },
+      "description": "職業適性値。Game RuntimeはこのStudio Masterを参照し、コード内固定値を使用しません。"
+    }
+  ]
+}
