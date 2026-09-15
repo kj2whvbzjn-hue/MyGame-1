@@ -58,6 +58,7 @@ jobs:
             Library/Bee
             Library/ScriptAssemblies
             Library/ArtifactDB
+            Library/DataStore
           key: unity-fast-incremental-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-${{ github.sha }}
           restore-keys: |
             unity-fast-incremental-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-
@@ -71,7 +72,7 @@ jobs:
           echo 'Disk:'
           df -h . || true
           echo 'Library directories before Unity:'
-          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB; do
+          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB Library/DataStore; do
             if [ -e "$d" ]; then du -sh "$d" || true; else echo "MISSING $d"; fi
           done
           echo '================================================='
@@ -92,7 +93,7 @@ jobs:
         run: |
           echo '=== FAST PERFORMANCE DIAGNOSTICS: AFTER UNITY ==='
           echo 'Library directory sizes:'
-          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB; do
+          for d in Library/PackageCache Library/Bee Library/ScriptAssemblies Library/SourceAssetDB Library/ArtifactDB Library/DataStore; do
             if [ -e "$d" ]; then du -sh "$d" || true; else echo "MISSING $d"; fi
           done
           echo
