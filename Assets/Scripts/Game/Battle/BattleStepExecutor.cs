@@ -27,7 +27,7 @@ namespace GuildAdventure.Game.Battle
     {
         public bool ok; public string reason;
         public ActionReservationSaveRecord reservation;
-        public ResolvedHitSaveRecord resolvedHit; // compatibility: last hit
+        public ResolvedHitSaveRecord resolvedHit;
         public List<ResolvedHitSaveRecord> resolvedHits=new List<ResolvedHitSaveRecord>();
         public List<BarrierLayer> remainingBarriers=new List<BarrierLayer>();
         public int barrierAbsorbed,hpAbsorbed,mpAbsorbed,reflectedDamage;
@@ -48,25 +48,21 @@ namespace GuildAdventure.Game.Battle
             if(!target.alive||target.hp<=0)return Fail("BATTLE_STEP_TARGET_DEAD");
             if(string.IsNullOrWhiteSpace(p.reservationId))return Fail("BATTLE_STEP_ID_MISSING");
             if(p.hitCount<=0)return Fail("BATTLE_STEP_HIT_COUNT_INVALID");
-            if(snapshot.actionReservations.Exists(x=>x.reservationId==p.reservationId))
-                return Fail("BATTLE_STEP_ID_DUPLICATE");
+            if(snapshot.actionReservations.Exists(x=>x.reservationId==p.reservationId))return Fail("BATTLE_STEP_ID_DUPLICATE");
 
             var reservation=new ActionReservationSaveRecord{
                 reservationId=p.reservationId,actorId=p.sourceId,skillId=p.skillId,
                 startTick=snapshot.tick,completeTick=snapshot.tick,
-                fixedTargetIds=new List<string>{p.targetId},
-                usageConditions=new UsageConditionsSaveRecord()
-            };
+                fixedTargetIds=new List<string>{p.targetId},usageConditions=new UsageConditionsSaveRecord()};
             snapshot.actionReservations.Add(reservation);
 
             var result=new BattleStepResult{ok=true,reservation=reservation};
             var barriers=p.barriers==null?new List<BarrierLayer>():new List<BarrierLayer>(p.barriers);
+            var fixedOrder=BattleEffectLifecycle.BuildFixedOrder(snapshot);
 
             for(var i=0;i<p.hitCount;i++)
             {
-                // Every hit is its own formal C03 record. A target killed by an earlier hit receives no later hits.
                 if(!target.alive||target.hp<=0)break;
-
                 var one=ResolveHit(snapshot,p,source,target,i,barriers,criticalRng,hitRng,blockRng);
                 if(!one.ok)
                 {
@@ -84,10 +80,12 @@ namespace GuildAdventure.Game.Battle
                 result.reflectedDamage+=one.reflectedDamage;
                 barriers=one.remainingBarriers;
                 snapshot.resolvedHits.Add(one.resolvedHit);
-                result.triggerDispatches.Add(BattleEffectLifecycle.DispatchResolvedHit(
-                    one.resolvedHit,p.triggerRegistrations,BattleEffectLifecycle.BuildFixedOrder(snapshot)));
 
-                if(!source.alive||source.hp<=0)break; // reflection can end the action.
+                // GS-20 requires the reactive queue to be drained per hit, not after the whole multi-hit action.
+                result.triggerDispatches.AddRange(BattleEffectLifecycle.DispatchResolvedHitEvents(
+                    one.resolvedHit,p.triggerRegistrations,fixedOrder));
+
+                if(!source.alive||source.hp<=0)break;
             }
             return result;
         }
@@ -100,21 +98,15 @@ namespace GuildAdventure.Game.Battle
             var hit=HitCritical.Resolve(p.criticalRatePercent,p.damageType,p.accuracy,p.evasion,p.magicAccuracy,p.magicResistance,
                 ()=>criticalRng.Next01("CRITICAL"),()=>hitRng.Next01("HIT"));
             var resolved=new ResolvedHitSaveRecord{
-                actionId=p.reservationId,hitIndex=hitIndex,
-                sourceId=p.sourceId,targetId=p.targetId,
-                judgement=hit.critical?"CRITICAL":hit.hit?"HIT":"MISS",
-                perHitDamage=0,committedHp=target.hp,actualHpLoss=0
-            };
+                actionId=p.reservationId,hitIndex=hitIndex,sourceId=p.sourceId,targetId=p.targetId,
+                judgement=hit.critical?"CRITICAL":hit.hit?"HIT":"MISS",perHitDamage=0,committedHp=target.hp,actualHpLoss=0};
             resolved.rngRolls.Add(hit.criticalRoll/100d);
             if(hit.hitRoll.HasValue)resolved.rngRolls.Add(hit.hitRoll.Value/100d);
-
-            if(!hit.hit)
-                return new BattleStepResult{ok=true,resolvedHit=resolved,remainingBarriers=barriers};
+            if(!hit.hit)return new BattleStepResult{ok=true,resolvedHit=resolved,remainingBarriers=barriers};
 
             var damage=DamageDefense.ResolveFinalDamage(p.baseDamage,p.damageResistance,hit.critical,p.criticalBonusDamagePercent,
                 p.criticalBonusReduction,p.elementShares,p.elementResistances,p.formationMultiplier,p.randomMultiplier);
             resolved.perHitDamage=damage.finalDamage;
-
             double? blockRoll=null;
             if(p.blockEligible&&p.blockRate>0)
             {
@@ -123,7 +115,6 @@ namespace GuildAdventure.Game.Battle
             }
             var block=DamageDefense.ResolveBlock(damage.finalDamage,p.blockEligible,p.blockRate,p.blockCutRate,blockRoll);
             resolved.block=new OpaqueContractPayload{json=block.blocked?"{\"blocked\":true}":"{\"blocked\":false}"};
-
             var barrier=DamageDefense.ConsumeBarrierFifo(block.damage,barriers);
             var hp=DamageDefense.CommitHp(target.hp,barrier.hpDamageCandidate,p.fatalResolver);
             target.hp=hp.hpAfter; target.alive=target.hp>0;
@@ -135,15 +126,9 @@ namespace GuildAdventure.Game.Battle
             int reflected=(int)Math.Floor(hp.actualHpLoss*Math.Max(0,p.reflectionRate));
             source.hp=Math.Min(source.maxHp,source.hp+hpAbsorb);
             source.mp=Math.Min(source.maxMp,source.mp+mpAbsorb);
-            if(reflected>0)
-            {
-                var reflectedCommit=DamageDefense.CommitHp(source.hp,reflected);
-                source.hp=reflectedCommit.hpAfter; source.alive=source.hp>0;
-            }
-
-            return new BattleStepResult{ok=true,resolvedHit=resolved,
-                remainingBarriers=barrier.layers,barrierAbsorbed=barrier.absorbed,
-                hpAbsorbed=hpAbsorb,mpAbsorbed=mpAbsorb,reflectedDamage=reflected};
+            if(reflected>0){var c=DamageDefense.CommitHp(source.hp,reflected);source.hp=c.hpAfter;source.alive=source.hp>0;}
+            return new BattleStepResult{ok=true,resolvedHit=resolved,remainingBarriers=barrier.layers,
+                barrierAbsorbed=barrier.absorbed,hpAbsorbed=hpAbsorb,mpAbsorbed=mpAbsorb,reflectedDamage=reflected};
         }
 
         static BattleStepResult Fail(string reason)=>new BattleStepResult{ok=false,reason=reason};
