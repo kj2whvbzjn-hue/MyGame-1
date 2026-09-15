@@ -40,18 +40,22 @@ jobs:
           restore-keys: |
             unity-packagecache-${{ runner.os }}-
 
-      # Cache only expensive WebGL compilation outputs.
-      # Do NOT cache the whole Library directory: that previously caused exit code 137.
-      - name: Restore WebGL Bee and Burst cache
+      # Preserve Unity's WebGL incremental-build state, not only final Bee artifacts.
+      # Unity 6 uses Library/Bee plus BuildPlayerData/PlayerDataCache metadata to decide
+      # whether Player build content can actually be reused.
+      # We still avoid caching the entire Library because that previously caused exit 137.
+      - name: Restore WebGL incremental build cache
         id: unity-webgl-build-cache
         uses: actions/cache@v4
         with:
           path: |
-            Library/Bee/artifacts/WebGL
+            Library/Bee
+            Library/BuildPlayerData
+            Library/PlayerDataCache
             Library/BurstCache/Wasm-Wasm
-          key: unity-webgl-build-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-${{ github.sha }}
+          key: unity-webgl-incremental-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-${{ github.sha }}
           restore-keys: |
-            unity-webgl-build-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-
+            unity-webgl-incremental-${{ runner.os }}-${{ hashFiles('ProjectSettings/ProjectVersion.txt') }}-
 
       - name: Build Unity WebGL
         uses: game-ci/unity-builder@v4
