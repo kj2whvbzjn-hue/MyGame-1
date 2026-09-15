@@ -35,6 +35,26 @@
       ]
     },
     {
+      "type": "log",
+      "message": "REAL ASSET TEST: resolving automation-test-crystal through asset-map.json"
+    },
+    {
+      "type": "spawnAsset",
+      "asset": "automation-test-crystal",
+      "name": "AI_Asset_Test_Crystal",
+      "position": [
+        -4.0,
+        3.2,
+        0.0
+      ],
+      "scale": [
+        1.2,
+        1.2,
+        1.0
+      ],
+      "sortingOrder": 20
+    },
+    {
       "type": "addComponent",
       "target": "Main Camera",
       "componentType": "DemoCameraFollow"
