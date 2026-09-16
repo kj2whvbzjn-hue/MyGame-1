@@ -12,8 +12,12 @@ namespace GuildAdventure.Game.Save
         public List<string> fixedTargetIds=new List<string>();
         public UsageConditionsSaveRecord usageConditions=new UsageConditionsSaveRecord();
 
-        // Unity runtime continuation extension. Values are frozen when C02 is created so
-        // a cast resumes/finishes with the same effective MP/CD/Cast values it reserved.
+        // Unity runtime continuation extensions. These values are frozen when C02 is
+        // created so cast completion revalidates the original target contract without
+        // selecting/replenishing/rerolling targets and uses the original effective timing.
+        public bool hasTargetContract;
+        public string targetCategory,targetRange;
+        public bool targetExcludeSelf;
         public bool hasEffectiveTiming;
         public int effectiveMpCost,effectiveCastTicks,effectiveCooldownTicks;
     }
