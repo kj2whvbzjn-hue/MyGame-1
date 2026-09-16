@@ -147,7 +147,7 @@ jobs:
             unity-error-report.txt
             unity-log-files.txt
           if-no-files-found: warn
-          retention-days: 14
+          retention-days: 3
 
       - name: Fail workflow when Unity validation failed
         if: steps.unity_fast.outcome != 'success'
