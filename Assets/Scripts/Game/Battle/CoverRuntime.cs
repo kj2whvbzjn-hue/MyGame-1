@@ -16,6 +16,15 @@ namespace GuildAdventure.Game.Battle
  public sealed class CoverResolveResult{public bool ok;public string reason;public string targetId;public CoverContract consumedCover;}
  public static class CoverRuntime
  {
+  public static void AdvanceDurations(IEnumerable<CoverContract> contracts)
+  {
+   foreach(var c in contracts??Array.Empty<CoverContract>())
+   {
+    if(c==null||!c.active||c.lifetime!=CoverLifetimeKind.DURATION)continue;
+    c.remainingTicks=Math.Max(0,c.remainingTicks-1);
+    if(c.remainingTicks==0)c.active=false;
+   }
+  }
   public static CoverResolveResult Resolve(BattleSnapshotSaveRecord snapshot,string originalTargetId,SkillTargetRange range,IEnumerable<CoverContract> contracts)
   {
    if(snapshot==null||string.IsNullOrWhiteSpace(originalTargetId))return Fail("COVER_INPUT_INVALID");
