@@ -9,7 +9,11 @@ namespace GuildAdventure.Game.Battle
     public sealed class PassiveContribution
     {
         public string passiveId,seriesId,property;
-        public double value;\n        public string capability;\n        // GS-19 periodic timing belongs to each passive contract, not global runtime settings.\n        public int periodicIntervalTicks;\n        public int periodicInitialDelayTicks;
+        public double value;
+        public string capability;
+        // GS-19 periodic timing belongs to each passive contract, not global runtime settings.
+        public int periodicIntervalTicks;
+        public int periodicInitialDelayTicks;
     }
 
     public sealed class PassiveCompileResult
@@ -22,7 +26,6 @@ namespace GuildAdventure.Game.Battle
     public sealed class PassiveRuntimeSettings
     {
         public int maxPassiveSlots=-1;
-        public int periodicRecoveryIntervalTicks=-1;
         public string Validate()
         {
             if(maxPassiveSlots<=0)return "PASSIVE_MAX_SLOTS_INVALID";

@@ -1,13 +1,14 @@
 #if UNITY_INCLUDE_TESTS
 using System.Collections.Generic;
 using NUnit.Framework;
-using GuildAdventure.Game.Battle;\nusing GuildAdventure.Game.Data;
+using GuildAdventure.Game.Battle;
+using GuildAdventure.Game.Data;
 namespace GuildAdventure.Tests.EditMode
 {
  public sealed class PassiveGs19ContractTests
  {
   static PassiveContribution P(string id,string series)=>new PassiveContribution{passiveId=id,seriesId=series,property="ATK",value=1};
-  static PassiveRuntimeSettings Settings(int slots=7)=>new PassiveRuntimeSettings{maxPassiveSlots=slots,periodicRecoveryIntervalTicks=13};
+  static PassiveRuntimeSettings Settings(int slots=7)=>new PassiveRuntimeSettings{maxPassiveSlots=slots};
 
   [Test] public void Compile_RejectsMissingSeriesId(){var r=PassiveRuntime.Compile(new[]{P("P1",null)},Settings());Assert.IsFalse(r.ok);Assert.AreEqual("PASSIVE_SERIES_ID_MISSING",r.reason);}
 

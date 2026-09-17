@@ -7,7 +7,8 @@ namespace GuildAdventure.Game.Data
     [Serializable] public sealed class AdventureSettingsFile { public AdventureSettingsRow[] data; }
     [Serializable] public sealed class AdventureSettingsRow { public string id; public string status; public bool enabled; public AdventureSettingsParams @params; }
     [Serializable] public sealed class AdventureSettingsParams { public AdventureGameRuntime game_runtime; }
-    [Serializable] public sealed class AdventureGameRuntime { public AdventureBattleFlow battle_flow; public AdventureSkillLoadout skill_loadout; }\n    [Serializable] public sealed class AdventureSkillLoadout { public int passive_slots=-1; }
+    [Serializable] public sealed class AdventureGameRuntime { public AdventureBattleFlow battle_flow; public AdventureSkillLoadout skill_loadout; }
+    [Serializable] public sealed class AdventureSkillLoadout { public int passive_slots=-1; }
     [Serializable] public sealed class AdventureBattleFlow { public AdventureActionGauge action_gauge; }
     [Serializable] public sealed class AdventureActionGauge
     {
