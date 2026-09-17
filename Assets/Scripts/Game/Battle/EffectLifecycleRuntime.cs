@@ -11,7 +11,7 @@ namespace GuildAdventure.Game.Battle
   public string instanceId,sourceId,effectId;
   public EffectLifecycleKind kind;
   public int baseDurationTicks;
-  public double value,statusResistancePercent;
+  public double value,statusResistancePercent,statusResistanceCapPercent=-1d;
   public int appliedTick,sequence,maxStacks;
   public bool removable=true,protectedEffect,normalCleanseEligible,actionDisabled;
  }
@@ -20,21 +20,21 @@ namespace GuildAdventure.Game.Battle
  public static class EffectLifecycleRuntime
  {
   public const int PermanentBattleCooldown=999999;
-  public const double FormalStatusResistanceCapPercent=75d;
-  public const int FormalDotMaxStacks=5;
   public static EffectStackRule Rule(EffectLifecycleKind kind,string effectId){if(kind==EffectLifecycleKind.STATUS)return EffectStackRule.UNIQUE_REFRESH;if(kind==EffectLifecycleKind.DOT)return EffectStackRule.STACK_SUM;if(kind==EffectLifecycleKind.BARRIER)return EffectStackRule.FIFO;return EffectStackRule.STACK_HIGHEST;}
-  public static int EffectiveStatusDuration(int baseTicks,double resistancePercent){var resistance=Math.Max(0,Math.Min(FormalStatusResistanceCapPercent,resistancePercent));return Math.Max(0,(int)Math.Ceiling(Math.Max(0,baseTicks)*(1-resistance/100d)));}
+  public static int EffectiveStatusDuration(int baseTicks,double resistancePercent,double resistanceCapPercent){if(resistanceCapPercent<0)throw new ArgumentOutOfRangeException(nameof(resistanceCapPercent));var resistance=Math.Max(0,Math.Min(resistanceCapPercent,resistancePercent));return Math.Max(0,(int)Math.Ceiling(Math.Max(0,baseTicks)*(1-resistance/100d)));}
   public static EffectApplyResult Apply(BattleActorSaveRecord actor,EffectApplyRequest request)
   {
    if(actor==null||request==null)return Fail("EFFECT_APPLY_INPUT_INVALID");
    if(string.IsNullOrWhiteSpace(request.instanceId)||string.IsNullOrWhiteSpace(request.effectId))return Fail("EFFECT_ID_MISSING");
+   if(request.kind==EffectLifecycleKind.STATUS&&request.statusResistanceCapPercent<0)return Fail("STATUS_RESISTANCE_CAP_MISSING");
    var rule=Rule(request.kind,request.effectId);
+   if((rule==EffectStackRule.STACK_SUM||rule==EffectStackRule.STACK_HIGHEST)&&request.maxStacks<=0)return Fail("EFFECT_MAX_STACKS_MISSING");
    actor.appliedEffects=actor.appliedEffects??new List<AppliedEffectSaveRecord>();
    if(actor.appliedEffects.Any(x=>x!=null&&x.instanceId==request.instanceId))return Fail("EFFECT_INSTANCE_ID_DUPLICATE");
-   var duration=request.kind==EffectLifecycleKind.STATUS?EffectiveStatusDuration(request.baseDurationTicks,request.statusResistancePercent):Math.Max(0,request.baseDurationTicks);
+   var duration=request.kind==EffectLifecycleKind.STATUS?EffectiveStatusDuration(request.baseDurationTicks,request.statusResistancePercent,request.statusResistanceCapPercent):Math.Max(0,request.baseDurationTicks);
    var same=actor.appliedEffects.Where(x=>x!=null&&!x.consumed&&x.effectId==request.effectId).OrderBy(x=>x.appliedTick).ThenBy(x=>x.sequence).ThenBy(x=>x.instanceId,StringComparer.Ordinal).ToList();
    if(rule==EffectStackRule.UNIQUE_REFRESH&&same.Count>0){var current=same[0];foreach(var duplicate in same.Skip(1))actor.appliedEffects.Remove(duplicate);current.remainingTicks=duration;current.value=request.value;current.sourceId=request.sourceId;current.appliedTick=request.appliedTick;current.sequence=request.sequence;current.removable=request.removable;current.protectedEffect=request.protectedEffect;current.normalCleanseEligible=request.normalCleanseEligible;current.actionDisabled=request.actionDisabled;return new EffectApplyResult{ok=true,applied=current,effectiveDurationTicks=duration};}
-   var maxStacks=request.maxStacks>0?request.maxStacks:(request.kind==EffectLifecycleKind.DOT?FormalDotMaxStacks:int.MaxValue);
+   var maxStacks=request.maxStacks>0?request.maxStacks:int.MaxValue;
    if(rule==EffectStackRule.STACK_SUM&&same.Count>=maxStacks)return Fail("EFFECT_STACK_LIMIT_REACHED");
    if(rule==EffectStackRule.STACK_HIGHEST&&same.Count>=maxStacks){var weakest=same.OrderBy(x=>x.value).ThenBy(x=>x.appliedTick).ThenBy(x=>x.sequence).ThenBy(x=>x.instanceId,StringComparer.Ordinal).First();if(request.value<=weakest.value)return new EffectApplyResult{ok=true,applied=weakest,effectiveDurationTicks=weakest.remainingTicks};actor.appliedEffects.Remove(weakest);}
    var row=new AppliedEffectSaveRecord{instanceId=request.instanceId,sourceId=request.sourceId,effectId=request.effectId,kind=request.kind.ToString(),remainingTicks=duration,value=request.value,appliedTick=request.appliedTick,sequence=request.sequence,removable=request.removable,protectedEffect=request.protectedEffect,normalCleanseEligible=request.normalCleanseEligible,actionDisabled=request.actionDisabled};actor.appliedEffects.Add(row);return new EffectApplyResult{ok=true,applied=row,effectiveDurationTicks=duration};
