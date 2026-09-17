@@ -26,8 +26,9 @@ namespace GuildAdventure.Game.Battle
                 if(row==null||string.IsNullOrWhiteSpace(row.id)||row.status=="disabled")continue;
                 if(result.ContainsKey(row.id))throw new ArgumentException("STATUS_ID_DUPLICATE:"+row.id);
                 if(!Enum.TryParse((row.lifecycle_kind??"").Trim(),true,out EffectLifecycleKind kind))throw new ArgumentException("STATUS_LIFECYCLE_KIND_INVALID:"+row.id);
+                if(!Enum.TryParse((row.stack_policy??"").Trim(),true,out EffectStackRule stackRule))throw new ArgumentException("STATUS_STACK_POLICY_INVALID:"+row.id);
                 if(kind==EffectLifecycleKind.STATUS&&row.resistance_cap_percent<0)throw new ArgumentException("STATUS_RESISTANCE_CAP_MISSING:"+row.id);
-                if((kind==EffectLifecycleKind.DOT||kind==EffectLifecycleKind.BUFF||kind==EffectLifecycleKind.DEBUFF)&&row.max_stacks<=0)throw new ArgumentException("STATUS_MAX_STACKS_MISSING:"+row.id);
+                if((stackRule==EffectStackRule.STACK_SUM||stackRule==EffectStackRule.STACK_HIGHEST)&&row.max_stacks<=0)throw new ArgumentException("STATUS_MAX_STACKS_MISSING:"+row.id);
                 result[row.id]=row;
             }
             return result;
