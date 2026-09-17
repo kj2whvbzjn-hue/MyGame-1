@@ -8,7 +8,7 @@ namespace GuildAdventure.Game.AI
  public sealed class AiTargetDecision{public bool ok;public string reason,targetId;public List<string> candidateIds=new List<string>();}
  public static class AiDecisionTargetRuntime
  {
-  public const string RngPurpose="AI_TIE_SELECTION";
+  public const string RngPurpose="AI_DECISION";
   public static AiTargetDecision Select(BattleSnapshotSaveRecord snapshot,IEnumerable<string> candidateIds,IRandomSource rng)
   {
    if(snapshot==null)return Fail("AI_TARGET_SNAPSHOT_MISSING");var fixedOrder=new Dictionary<string,int>(StringComparer.Ordinal);for(var i=0;i<(snapshot.fixedActorOrder?.Count??0);i++)fixedOrder[snapshot.fixedActorOrder[i]]=i;
