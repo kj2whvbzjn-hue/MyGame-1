@@ -7,7 +7,7 @@ namespace GuildAdventure.Game.Save
  [Serializable] public sealed class BarrierLayerSaveRecord{public string id,sourceId,effectId;public int remaining,appliedTick,sequence;}
  [Serializable] public sealed class CastSaveRecord{public string reservationId,skillId,targetId;public int startTick,completeTick,remainingTicks;public bool active;public List<string> fixedTargetIds=new List<string>();public UsageConditionsSaveRecord usageConditions=new UsageConditionsSaveRecord();}
  [Serializable] public sealed class CooldownSaveRecord{public string skillId;public int remainingTicks;}
- [Serializable] public sealed class AppliedEffectSaveRecord{public string instanceId,sourceId,effectId,kind;public int remainingTicks,appliedTick,sequence;public double value;public bool consumed;public bool removable=true,protectedEffect,normalCleanseEligible,actionDisabled;}
+ [Serializable] public sealed class AppliedEffectSaveRecord{public string instanceId,sourceId,effectId,kind,refreshRule,snapshotPolicy,dispelCategory;public int remainingTicks,appliedTick,sequence;public double value;public bool consumed;public bool removable=true,protectedEffect,normalCleanseEligible,actionDisabled,removeOnDeath=true,removeOnBattleEnd=true;}
  [Serializable] public sealed class RngStreamSaveRecord{public string purpose;public int cursor;public List<double> recordedRolls=new List<double>();}
  public static class BattleSnapshotValidation
  {
