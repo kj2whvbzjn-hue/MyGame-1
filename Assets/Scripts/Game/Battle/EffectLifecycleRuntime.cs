@@ -10,6 +10,7 @@ namespace GuildAdventure.Game.Battle
  {
   public string instanceId,sourceId,effectId;
   public EffectLifecycleKind kind;
+  public EffectStackRule? stackRule;
   public int baseDurationTicks;
   public double value,statusResistancePercent,statusResistanceCapPercent=-1d;
   public int appliedTick,sequence,maxStacks;
@@ -20,14 +21,14 @@ namespace GuildAdventure.Game.Battle
  public static class EffectLifecycleRuntime
  {
   public const int PermanentBattleCooldown=999999;
-  public static EffectStackRule Rule(EffectLifecycleKind kind,string effectId){if(kind==EffectLifecycleKind.STATUS)return EffectStackRule.UNIQUE_REFRESH;if(kind==EffectLifecycleKind.DOT)return EffectStackRule.STACK_SUM;if(kind==EffectLifecycleKind.BARRIER)return EffectStackRule.FIFO;return EffectStackRule.STACK_HIGHEST;}
   public static int EffectiveStatusDuration(int baseTicks,double resistancePercent,double resistanceCapPercent){if(resistanceCapPercent<0)throw new ArgumentOutOfRangeException(nameof(resistanceCapPercent));var resistance=Math.Max(0,Math.Min(resistanceCapPercent,resistancePercent));return Math.Max(0,(int)Math.Ceiling(Math.Max(0,baseTicks)*(1-resistance/100d)));}
   public static EffectApplyResult Apply(BattleActorSaveRecord actor,EffectApplyRequest request)
   {
    if(actor==null||request==null)return Fail("EFFECT_APPLY_INPUT_INVALID");
    if(string.IsNullOrWhiteSpace(request.instanceId)||string.IsNullOrWhiteSpace(request.effectId))return Fail("EFFECT_ID_MISSING");
+   if(!request.stackRule.HasValue)return Fail("EFFECT_STACK_RULE_MISSING");
    if(request.kind==EffectLifecycleKind.STATUS&&request.statusResistanceCapPercent<0)return Fail("STATUS_RESISTANCE_CAP_MISSING");
-   var rule=Rule(request.kind,request.effectId);
+   var rule=request.stackRule.Value;
    if((rule==EffectStackRule.STACK_SUM||rule==EffectStackRule.STACK_HIGHEST)&&request.maxStacks<=0)return Fail("EFFECT_MAX_STACKS_MISSING");
    actor.appliedEffects=actor.appliedEffects??new List<AppliedEffectSaveRecord>();
    if(actor.appliedEffects.Any(x=>x!=null&&x.instanceId==request.instanceId))return Fail("EFFECT_INSTANCE_ID_DUPLICATE");
