@@ -9,8 +9,7 @@ namespace GuildAdventure.Game.Battle
     public sealed class PassiveContribution
     {
         public string passiveId,seriesId,property;
-        public double value;
-        public string capability;
+        public double value;\n        public string capability;\n        // GS-19 periodic timing belongs to each passive contract, not global runtime settings.\n        public int periodicIntervalTicks;\n        public int periodicInitialDelayTicks;
     }
 
     public sealed class PassiveCompileResult
@@ -27,7 +26,6 @@ namespace GuildAdventure.Game.Battle
         public string Validate()
         {
             if(maxPassiveSlots<=0)return "PASSIVE_MAX_SLOTS_INVALID";
-            if(periodicRecoveryIntervalTicks<=0)return "PASSIVE_PERIODIC_INTERVAL_INVALID";
             return null;
         }
     }
@@ -58,14 +56,16 @@ namespace GuildAdventure.Game.Battle
         public static double SumProperty(PassiveCompileResult compiled,string property)
             => compiled==null||!compiled.ok?0:compiled.contributions.Where(x=>x.property==property).Sum(x=>x.value);
 
-        public static bool IsPeriodicRecoveryTick(int tick,PassiveRuntimeSettings settings)
-            => settings!=null&&settings.Validate()==null&&tick>0&&tick%settings.periodicRecoveryIntervalTicks==0;
+        public static bool IsPeriodicRecoveryTick(int tick,PassiveContribution contribution)
+            => contribution!=null&&contribution.periodicIntervalTicks>0&&contribution.periodicInitialDelayTicks>=0&&tick>=contribution.periodicInitialDelayTicks&&(tick-contribution.periodicInitialDelayTicks)%contribution.periodicIntervalTicks==0;
 
         public static int RecoverPeriodic(BattleActorSaveRecord actor,PassiveCompileResult compiled,int tick,PassiveRuntimeSettings settings)
         {
-            if(actor==null||compiled==null||!compiled.ok||!actor.alive||actor.hp<=0||!IsPeriodicRecoveryTick(tick,settings))return 0;
-            var hpAmount=(int)Math.Floor(Math.Max(0,actor.maxHp)*Math.Max(0,SumProperty(compiled,PeriodicHpRecoveryPercent))/100d);
-            var mpAmount=(int)Math.Floor(Math.Max(0,actor.maxMp)*Math.Max(0,SumProperty(compiled,PeriodicMpRecoveryPercent))/100d);
+            if(actor==null||compiled==null||!compiled.ok||settings==null||settings.Validate()!=null||!actor.alive||actor.hp<=0)return 0;
+            var hpPercent=compiled.contributions.Where(x=>x.property==PeriodicHpRecoveryPercent&&IsPeriodicRecoveryTick(tick,x)).Sum(x=>x.value);
+            var mpPercent=compiled.contributions.Where(x=>x.property==PeriodicMpRecoveryPercent&&IsPeriodicRecoveryTick(tick,x)).Sum(x=>x.value);
+            var hpAmount=(int)Math.Floor(Math.Max(0,actor.maxHp)*Math.Max(0,hpPercent)/100d);
+            var mpAmount=(int)Math.Floor(Math.Max(0,actor.maxMp)*Math.Max(0,mpPercent)/100d);
             var hpBefore=actor.hp;
             var mpBefore=actor.mp;
             actor.hp=Math.Min(actor.maxHp,actor.hp+Math.Max(0,hpAmount));

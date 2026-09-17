@@ -13,8 +13,8 @@ namespace GuildAdventure.Tests.EditMode
   {
    var settings=Settings(7,13);
    var c=Compile(settings,
-    new PassiveContribution{passiveId="P1",seriesId="S1",property=PassiveRuntime.PeriodicHpRecoveryPercent,value=10},
-    new PassiveContribution{passiveId="P2",seriesId="S2",property=PassiveRuntime.PeriodicMpRecoveryPercent,value=20});
+    new PassiveContribution{passiveId="P1",seriesId="S1",property=PassiveRuntime.PeriodicHpRecoveryPercent,value=10,periodicIntervalTicks=13,periodicInitialDelayTicks=13},
+    new PassiveContribution{passiveId="P2",seriesId="S2",property=PassiveRuntime.PeriodicMpRecoveryPercent,value=20,periodicIntervalTicks=13,periodicInitialDelayTicks=13});
    var a=new BattleActorSaveRecord{actorId="A",hp=80,maxHp=100,mp=45,maxMp=50,alive=true};
    Assert.AreEqual(0,PassiveRuntime.RecoverPeriodic(a,c,12,settings));
    Assert.AreEqual(15,PassiveRuntime.RecoverPeriodic(a,c,13,settings));
