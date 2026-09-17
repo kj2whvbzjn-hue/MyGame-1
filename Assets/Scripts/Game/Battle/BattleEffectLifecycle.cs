@@ -10,7 +10,7 @@ namespace GuildAdventure.Game.Battle
         public string actionId,sourceId,targetId;
         public int hitIndex;
         public string judgement;
-        public int actualHpLoss;
+        public double actualHpLoss;
     }
 
     public sealed class BattleTriggerDispatch
