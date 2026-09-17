@@ -59,6 +59,23 @@ namespace GuildAdventure.Tests.EditMode
             var r=CombatCapabilityResolver.Normalize(new[]{"DUAL_WIELD"});
             Assert.IsTrue(r.Contains(CombatCapability.DUAL_WIELD));
         }
+
+        [Test] public void FixedBattleOrder_ConsumesRngOnlyDuringInitialization()
+        {
+            int orderDraws=0;
+            var fixedOrder=BattleTurnOrder.CreateFixedOrder(
+                new[]{"actor-c","actor-a","actor-b"},
+                ()=>{ orderDraws++; return orderDraws * 0.1; });
+
+            Assert.AreEqual(3,orderDraws);
+
+            var living=new HashSet<string>{"actor-a","actor-c"};
+            var firstTick=BattleTurnOrder.LivingActorsInFixedOrder(fixedOrder,living);
+            var secondTick=BattleTurnOrder.LivingActorsInFixedOrder(fixedOrder,living);
+
+            Assert.AreEqual(3,orderDraws,"Tick processing must not consume battle-order RNG after initialization.");
+            CollectionAssert.AreEqual(firstTick,secondTick);
+        }
     }
 }
 #endif
