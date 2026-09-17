@@ -6,12 +6,12 @@ namespace GuildAdventure.Tests.EditMode
 {
  public sealed class PassivePeriodicLowHpTests
  {
-  static PassiveRuntimeSettings Settings(int slots=5,int interval=20)=>new PassiveRuntimeSettings{maxPassiveSlots=slots,periodicRecoveryIntervalTicks=interval};
+  static PassiveRuntimeSettings Settings(int slots=5)=>new PassiveRuntimeSettings{maxPassiveSlots=slots};
   static PassiveCompileResult Compile(PassiveRuntimeSettings settings,params PassiveContribution[] rows)=>PassiveRuntime.Compile(rows,settings);
 
   [Test] public void PeriodicRecovery_UsesConfiguredInterval_AndCapsResources()
   {
-   var settings=Settings(7,13);
+   var settings=Settings(7);
    var c=Compile(settings,
     new PassiveContribution{passiveId="P1",seriesId="S1",property=PassiveRuntime.PeriodicHpRecoveryPercent,value=10,periodicIntervalTicks=13,periodicInitialDelayTicks=13},
     new PassiveContribution{passiveId="P2",seriesId="S2",property=PassiveRuntime.PeriodicMpRecoveryPercent,value=20,periodicIntervalTicks=13,periodicInitialDelayTicks=13});
@@ -28,8 +28,8 @@ namespace GuildAdventure.Tests.EditMode
     new PassiveContribution{passiveId="P1",seriesId="S1"},
     new PassiveContribution{passiveId="P2",seriesId="S2"},
     new PassiveContribution{passiveId="P3",seriesId="S3"}};
-   Assert.IsTrue(Compile(Settings(3,20),rows).ok);
-   Assert.AreEqual("PASSIVE_SLOT_LIMIT_EXCEEDED",Compile(Settings(2,20),rows).reason);
+   Assert.IsTrue(Compile(Settings(3),rows).ok);
+   Assert.AreEqual("PASSIVE_SLOT_LIMIT_EXCEEDED",Compile(Settings(2),rows).reason);
   }
 
   [Test] public void Compile_RejectsMissingBalanceSettings()

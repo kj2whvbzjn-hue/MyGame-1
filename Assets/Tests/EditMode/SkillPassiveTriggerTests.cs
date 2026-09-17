@@ -8,7 +8,7 @@ namespace GuildAdventure.Tests.EditMode
 {
     public sealed class SkillPassiveTriggerTests
     {
-        static PassiveRuntimeSettings Settings()=>new PassiveRuntimeSettings{maxPassiveSlots=4,periodicRecoveryIntervalTicks=7};
+        static PassiveRuntimeSettings Settings()=>new PassiveRuntimeSettings{maxPassiveSlots=4};
 
         [Test]
         public void FormalCompiler_RejectsUnknownEffect()

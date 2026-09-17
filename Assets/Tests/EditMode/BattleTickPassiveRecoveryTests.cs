@@ -6,7 +6,7 @@ namespace GuildAdventure.Tests.EditMode
 {
  public sealed class BattleTickPassiveRecoveryTests
  {
-  static readonly PassiveRuntimeSettings PassiveSettings=new PassiveRuntimeSettings{maxPassiveSlots=7,periodicRecoveryIntervalTicks=13};
+  static readonly PassiveRuntimeSettings PassiveSettings=new PassiveRuntimeSettings{maxPassiveSlots=7};
   static ActionGaugeSettings GaugeSettings()=>new ActionGaugeSettings{maxGauge=100,aiReevaluationRatio=.1,successfulActionConsumeRatio=1,failedExecutionConsumeRatio=.5,agiGaugeCoefficient=1,actionSpeedMultiplier=1};
   static BattleSnapshotSaveRecord Snapshot(int tick){var s=new BattleSnapshotSaveRecord{battleId="B",settingsVersion="S",seed="SEED",tick=tick};s.actors.Add(new BattleActorSaveRecord{actorId="A",hp=50,maxHp=100,mp=10,maxMp=50,speed=0,alive=true});s.fixedActorOrder.Add("A");return s;}
   static PassiveCompileResult Passives()=>PassiveRuntime.Compile(new[]{new PassiveContribution{passiveId="P1",seriesId="S1",property=PassiveRuntime.PeriodicHpRecoveryPercent,value=10,periodicIntervalTicks=13,periodicInitialDelayTicks=13},new PassiveContribution{passiveId="P2",seriesId="S2",property=PassiveRuntime.PeriodicMpRecoveryPercent,value=20,periodicIntervalTicks=13,periodicInitialDelayTicks=13}},PassiveSettings);
