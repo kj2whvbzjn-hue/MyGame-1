@@ -11,9 +11,10 @@ namespace GuildAdventure.Game.Battle
     {
         public string instanceId,sourceId,effectId;
         public ApplyKind kind;
-        public int remainingTicks;
+        public int remainingTicks,appliedTick,sequence;
         public double value;
         public bool consumed;
+        public bool removable=true,protectedEffect,normalCleanseEligible,actionDisabled;
     }
 
     public sealed class ApplyResult
@@ -61,7 +62,9 @@ namespace GuildAdventure.Game.Battle
 
         private static AppliedEffect Clone(AppliedEffect x)=>new AppliedEffect{
             instanceId=x.instanceId,sourceId=x.sourceId,effectId=x.effectId,kind=x.kind,
-            remainingTicks=x.remainingTicks,value=x.value,consumed=x.consumed};
+            remainingTicks=x.remainingTicks,appliedTick=x.appliedTick,sequence=x.sequence,
+            value=x.value,consumed=x.consumed,removable=x.removable,protectedEffect=x.protectedEffect,
+            normalCleanseEligible=x.normalCleanseEligible,actionDisabled=x.actionDisabled};
         private static ApplyResult Fail(string r)=>new ApplyResult{ok=false,reason=r};
     }
 }
