@@ -8,6 +8,7 @@ namespace GuildAdventure.Game.AI
     {
         public Func<FormalAiNode,bool> search;
         public Func<FormalAiNode,bool> condition;
+        public int maxSteps=-1;
     }
 
     public sealed class FormalAiExecutionResult
@@ -22,12 +23,13 @@ namespace GuildAdventure.Game.AI
     // are supplied by compiled masters. The executor only performs deterministic graph traversal.
     public static class FormalAiV2Executor
     {
-        public static FormalAiExecutionResult Execute(FormalAiProgram program,FormalAiExecutionContext context,int maxSteps=128)
+        public static FormalAiExecutionResult Execute(FormalAiProgram program,FormalAiExecutionContext context)
         {
             var validation=FormalAiV2.Validate(program);
             if(!validation.ok)return Fail(validation.reason);
             if(context==null)return Fail("AI_V2_CONTEXT_MISSING");
-            if(maxSteps<=0)return Fail("AI_V2_STEP_LIMIT_INVALID");
+            if(context.maxSteps<=0)return Fail("AI_V2_STEP_LIMIT_INVALID");
+            var maxSteps=context.maxSteps;
 
             var byId=(program.nodes??Array.Empty<FormalAiNode>()).ToDictionary(x=>x.instance_id,StringComparer.Ordinal);
             var outgoing=(program.edges??Array.Empty<FormalAiEdge>())

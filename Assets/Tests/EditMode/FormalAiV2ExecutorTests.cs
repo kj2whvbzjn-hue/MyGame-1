@@ -9,7 +9,7 @@ namespace GuildAdventure.Tests.EditMode
         [Test] public void SearchFound_ConditionTrue_ReachesActionDeterministically()
         {
             var p=Program();
-            var r=FormalAiV2Executor.Execute(p,new FormalAiExecutionContext{
+            var r=FormalAiV2Executor.Execute(p,new FormalAiExecutionContext{maxSteps=16,
                 search=n=>true,
                 condition=n=>true
             });
@@ -20,7 +20,7 @@ namespace GuildAdventure.Tests.EditMode
 
         [Test] public void SearchNotFound_UsesNotFoundAction()
         {
-            var r=FormalAiV2Executor.Execute(Program(),new FormalAiExecutionContext{
+            var r=FormalAiV2Executor.Execute(Program(),new FormalAiExecutionContext{maxSteps=16,
                 search=n=>false,
                 condition=n=>true
             });
@@ -31,9 +31,16 @@ namespace GuildAdventure.Tests.EditMode
 
         [Test] public void MissingCompiledHandler_FailsClosed()
         {
-            var r=FormalAiV2Executor.Execute(Program(),new FormalAiExecutionContext());
+            var r=FormalAiV2Executor.Execute(Program(),new FormalAiExecutionContext{maxSteps=16});
             Assert.IsFalse(r.ok);
             Assert.AreEqual("AI_V2_SEARCH_HANDLER_MISSING",r.reason);
+        }
+
+        [Test] public void MissingStepLimit_FailsClosed()
+        {
+            var r=FormalAiV2Executor.Execute(Program(),new FormalAiExecutionContext{search=n=>true,condition=n=>true});
+            Assert.IsFalse(r.ok);
+            Assert.AreEqual("AI_V2_STEP_LIMIT_INVALID",r.reason);
         }
 
         static FormalAiProgram Program()=>new FormalAiProgram{
