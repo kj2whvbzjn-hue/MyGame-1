@@ -70,7 +70,7 @@ namespace GuildAdventure.Tests.EditMode
         [Test] public void TickRuntime_UsesInjectedGaugeMaximum()
         {
             var actor=new BattleActorSaveRecord{actorId="A",teamId="ALLY",hp=10,maxHp=10,mp=0,maxMp=0,alive=true,speed=100,actionGauge=45};
-            var snapshot=new BattleSnapshotSaveRecord{battleId="B",settingsVersion="S",seed=1,actors=new System.Collections.Generic.List<BattleActorSaveRecord>{actor},fixedActorOrder=new System.Collections.Generic.List<string>{"A"}};
+            var snapshot=new BattleSnapshotSaveRecord{battleId="B",settingsVersion="S",seed="1",actors=new System.Collections.Generic.List<BattleActorSaveRecord>{actor},fixedActorOrder=new System.Collections.Generic.List<string>{"A"}};
             var result=BattleTickRuntime.Advance(snapshot,new BattleTickOptions{actionGaugeSettings=Settings(50)});
             Assert.IsTrue(result.ok,result.reason);
             Assert.AreEqual(50,actor.actionGauge,1e-9);
@@ -79,7 +79,7 @@ namespace GuildAdventure.Tests.EditMode
         [Test] public void TickRuntime_RejectsMissingGaugeBalance()
         {
             var actor=new BattleActorSaveRecord{actorId="A",teamId="ALLY",hp=10,maxHp=10,alive=true};
-            var snapshot=new BattleSnapshotSaveRecord{battleId="B",settingsVersion="S",seed=1,actors=new System.Collections.Generic.List<BattleActorSaveRecord>{actor},fixedActorOrder=new System.Collections.Generic.List<string>{"A"}};
+            var snapshot=new BattleSnapshotSaveRecord{battleId="B",settingsVersion="S",seed="1",actors=new System.Collections.Generic.List<BattleActorSaveRecord>{actor},fixedActorOrder=new System.Collections.Generic.List<string>{"A"}};
             var result=BattleTickRuntime.Advance(snapshot);
             Assert.IsFalse(result.ok);Assert.AreEqual("ACTION_GAUGE_SETTINGS_MISSING",result.reason);
         }
