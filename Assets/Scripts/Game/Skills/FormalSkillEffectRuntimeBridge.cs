@@ -17,6 +17,7 @@ namespace GuildAdventure.Game.Skills
                 effectId=effect.statusId,
                 instanceId=instanceId,
                 lifecycleKind=effect.lifecycleKind,
+                stackRule=effect.stackRule,
                 durationTicks=effect.duration,
                 sequence=sequence,
                 maxStacks=effect.maxStacks,
