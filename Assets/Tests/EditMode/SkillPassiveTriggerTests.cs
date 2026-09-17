@@ -8,6 +8,8 @@ namespace GuildAdventure.Tests.EditMode
 {
     public sealed class SkillPassiveTriggerTests
     {
+        static PassiveRuntimeSettings Settings()=>new PassiveRuntimeSettings{maxPassiveSlots=4,periodicRecoveryIntervalTicks=7};
+
         [Test]
         public void FormalCompiler_RejectsUnknownEffect()
         {
@@ -28,7 +30,7 @@ namespace GuildAdventure.Tests.EditMode
             var r=PassiveRuntime.Compile(new[]{
                 new PassiveContribution{passiveId="P1",seriesId="SERIES-A"},
                 new PassiveContribution{passiveId="P2",seriesId="SERIES-A"}
-            });
+            },Settings());
             Assert.IsFalse(r.ok);
         }
 
@@ -36,8 +38,8 @@ namespace GuildAdventure.Tests.EditMode
         public void Passive_CanGrantDualWieldCapability()
         {
             var r=PassiveRuntime.Compile(new[]{
-                new PassiveContribution{passiveId="P1",capability="DUAL_WIELD"}
-            });
+                new PassiveContribution{passiveId="P1",seriesId="SERIES-A",capability="DUAL_WIELD"}
+            },Settings());
             Assert.IsTrue(r.capabilities.Contains("DUAL_WIELD"));
         }
 
