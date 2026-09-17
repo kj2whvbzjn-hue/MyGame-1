@@ -89,22 +89,40 @@ jobs:
           echo "Branch: $GITHUB_REF_NAME" >> "$OUT"
           echo "Run: $GITHUB_RUN_NUMBER  SHA: $GITHUB_SHA" >> "$OUT"
           echo >> "$OUT"
+
           FOUND=0
-          for f in "$GITHUB_WORKSPACE/Editor.log" "$HOME/.config/unity3d/Editor.log"; do
+          for f in \
+            "$GITHUB_WORKSPACE/Editor.log" \
+            "$GITHUB_WORKSPACE/build/Editor.log" \
+            "$GITHUB_WORKSPACE/build/UnityBuilder.log" \
+            "$GITHUB_WORKSPACE/Library/Editor.log" \
+            "$HOME/.config/unity3d/Editor.log" \
+            "$HOME/.config/unity3d/Unity/Editor.log"; do
             if [ -f "$f" ]; then
               echo "===== $f =====" >> "$OUT"
-              grep -Eain -C 3 'error CS[0-9]+|Scripts have compiler errors|Compilation failed|Script Compilation Error|Tundra build failed|Aborting batchmode due to failure|Unhandled Exception|Exception:' "$f" >> "$OUT" || true
+              grep -Eain -C 5 'error CS[0-9]+|Scripts have compiler errors|Compilation failed|Script Compilation Error|Tundra build failed|Aborting batchmode due to failure|Unhandled Exception|Exception:|Build failed' "$f" >> "$OUT" || tail -300 "$f" >> "$OUT"
               FOUND=1
             fi
           done
+
           if [ "$FOUND" -eq 0 ]; then
-            echo "No readable Editor.log found." >> "$OUT"
+            echo "No standard Unity log found; searching workspace and Unity config directories." >> "$OUT"
+            while IFS= read -r f; do
+              echo "===== $f =====" >> "$OUT"
+              grep -Eain -C 5 'error CS[0-9]+|Scripts have compiler errors|Compilation failed|Script Compilation Error|Tundra build failed|Aborting batchmode due to failure|Unhandled Exception|Exception:|Build failed' "$f" >> "$OUT" || tail -300 "$f" >> "$OUT"
+              FOUND=1
+            done < <(find "$GITHUB_WORKSPACE" "$HOME/.config/unity3d" -type f \( -iname 'Editor.log' -o -iname '*unity*.log' -o -iname '*builder*.log' \) 2>/dev/null | head -30)
           fi
+
+          if [ "$FOUND" -eq 0 ]; then
+            echo "No readable Unity log found." >> "$OUT"
+          fi
+
           cat "$OUT"
           {
             echo '## Unity FAST error report'
             echo '```text'
-            tail -300 "$OUT"
+            tail -500 "$OUT"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
