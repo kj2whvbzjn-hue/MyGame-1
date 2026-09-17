@@ -16,7 +16,7 @@ namespace GuildAdventure.Game.Battle
   public static BattleLifecycleTriggerResult Dispatch(BattleSnapshotSaveRecord snapshot,TriggerEvent trigger,IEnumerable<TriggerRegistration> registrations,TriggerActionContext actionContext,IRandomSource passiveTriggerRng,Action<ReactiveTriggerRequest> executeReactive)
   {
    if(snapshot==null)return Fail("BATTLE_LIFECYCLE_SNAPSHOT_MISSING");
-   if(trigger!=TriggerEvent.ON_BATTLE_START&&trigger!=TriggerEvent.ON_TURN_START&&trigger!=TriggerEvent.ON_TURN_END&&trigger!=TriggerEvent.WHILE_SOURCE_ALIVE)return Fail("BATTLE_LIFECYCLE_TRIGGER_INVALID");
+   if(trigger!=TriggerEvent.ON_BATTLE_START&&trigger!=TriggerEvent.ON_BATTLE_END&&trigger!=TriggerEvent.ON_TURN_START&&trigger!=TriggerEvent.ON_TURN_END&&trigger!=TriggerEvent.WHILE_SOURCE_ALIVE)return Fail("BATTLE_LIFECYCLE_TRIGGER_INVALID");
    var context=actionContext??new TriggerActionContext{actionId=trigger+":"+snapshot.tick};
    if(string.IsNullOrWhiteSpace(context.actionId))context.actionId=trigger+":"+snapshot.tick;
    var fixedOrder=BattleEffectLifecycle.BuildFixedOrder(snapshot);
