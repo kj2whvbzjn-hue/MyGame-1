@@ -20,20 +20,32 @@ namespace GuildAdventure.Game.Battle
         public HashSet<string> capabilities=new HashSet<string>();
     }
 
+    public sealed class PassiveRuntimeSettings
+    {
+        public int maxPassiveSlots=-1;
+        public int periodicRecoveryIntervalTicks=-1;
+        public string Validate()
+        {
+            if(maxPassiveSlots<=0)return "PASSIVE_MAX_SLOTS_INVALID";
+            if(periodicRecoveryIntervalTicks<=0)return "PASSIVE_PERIODIC_INTERVAL_INVALID";
+            return null;
+        }
+    }
+
     public static class PassiveRuntime
     {
-        public const int MaxPassiveSlots=5;
-        public const int PeriodicRecoveryIntervalTicks=20;
         public const string PeriodicHpRecoveryPercent="PERIODIC_HP_RECOVERY_PERCENT";
         public const string PeriodicMpRecoveryPercent="PERIODIC_MP_RECOVERY_PERCENT";
         public const string LowHpThresholdPercent="LOW_HP_THRESHOLD_PERCENT";
         public const string LowHpAttackBoostPercent="LOW_HP_ATTACK_BOOST_PERCENT";
         public const string LowHpDefenseBoostPercent="LOW_HP_DEFENSE_BOOST_PERCENT";
 
-        public static PassiveCompileResult Compile(IEnumerable<PassiveContribution> equipped)
+        public static PassiveCompileResult Compile(IEnumerable<PassiveContribution> equipped,PassiveRuntimeSettings settings)
         {
+            var settingsError=settings?.Validate()??"PASSIVE_SETTINGS_MISSING";
+            if(settingsError!=null)return Fail(settingsError);
             var rows=(equipped??Array.Empty<PassiveContribution>()).ToList();
-            if(rows.Count>MaxPassiveSlots)return Fail("PASSIVE_SLOT_LIMIT_EXCEEDED");
+            if(rows.Count>settings.maxPassiveSlots)return Fail("PASSIVE_SLOT_LIMIT_EXCEEDED");
             if(rows.Any(x=>x==null||string.IsNullOrWhiteSpace(x.passiveId)))return Fail("PASSIVE_ID_MISSING");
             if(rows.Any(x=>string.IsNullOrWhiteSpace(x.seriesId)))return Fail("PASSIVE_SERIES_ID_MISSING");
             var duplicateSeries=rows.GroupBy(x=>x.seriesId,StringComparer.Ordinal).FirstOrDefault(g=>g.Count()>1);
@@ -46,12 +58,12 @@ namespace GuildAdventure.Game.Battle
         public static double SumProperty(PassiveCompileResult compiled,string property)
             => compiled==null||!compiled.ok?0:compiled.contributions.Where(x=>x.property==property).Sum(x=>x.value);
 
-        public static bool IsPeriodicRecoveryTick(int tick)
-            => tick>0&&tick%PeriodicRecoveryIntervalTicks==0;
+        public static bool IsPeriodicRecoveryTick(int tick,PassiveRuntimeSettings settings)
+            => settings!=null&&settings.Validate()==null&&tick>0&&tick%settings.periodicRecoveryIntervalTicks==0;
 
-        public static int RecoverPeriodic(BattleActorSaveRecord actor,PassiveCompileResult compiled,int tick)
+        public static int RecoverPeriodic(BattleActorSaveRecord actor,PassiveCompileResult compiled,int tick,PassiveRuntimeSettings settings)
         {
-            if(actor==null||compiled==null||!compiled.ok||!actor.alive||actor.hp<=0||!IsPeriodicRecoveryTick(tick))return 0;
+            if(actor==null||compiled==null||!compiled.ok||!actor.alive||actor.hp<=0||!IsPeriodicRecoveryTick(tick,settings))return 0;
             var hpAmount=(int)Math.Floor(Math.Max(0,actor.maxHp)*Math.Max(0,SumProperty(compiled,PeriodicHpRecoveryPercent))/100d);
             var mpAmount=(int)Math.Floor(Math.Max(0,actor.maxMp)*Math.Max(0,SumProperty(compiled,PeriodicMpRecoveryPercent))/100d);
             var hpBefore=actor.hp;
