@@ -13,6 +13,7 @@ namespace GuildAdventure.Game.Skills
         public double power;
         public int duration;
         public EffectLifecycleKind lifecycleKind;
+        public EffectStackRule? stackRule;
         public int maxStacks;
         public double resistanceCapPercent=-1d;
         public bool removable=true,protectedEffect,normalCleanseEligible,actionDisabled;
@@ -49,7 +50,9 @@ namespace GuildAdventure.Game.Skills
                     if(statuses==null)throw new ArgumentException("STATUS_MASTER_REQUIRED:"+e.statusId);
                     if(!statuses.TryGetValue(e.statusId,out var status)||status==null)throw new ArgumentException("STATUS_ID_UNKNOWN:"+e.statusId);
                     if(!Enum.TryParse((status.lifecycle_kind??"").Trim(),true,out EffectLifecycleKind lifecycleKind))throw new ArgumentException("STATUS_LIFECYCLE_KIND_INVALID:"+e.statusId);
+                    if(!Enum.TryParse((status.stack_policy??"").Trim(),true,out EffectStackRule stackRule))throw new ArgumentException("STATUS_STACK_POLICY_INVALID:"+e.statusId);
                     compiled.lifecycleKind=lifecycleKind;
+                    compiled.stackRule=stackRule;
                     compiled.maxStacks=status.max_stacks;
                     compiled.resistanceCapPercent=status.resistance_cap_percent;
                     compiled.removable=status.removable;
