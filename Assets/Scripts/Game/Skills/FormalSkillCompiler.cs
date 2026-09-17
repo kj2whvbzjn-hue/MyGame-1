@@ -16,8 +16,8 @@ namespace GuildAdventure.Game.Skills
         public EffectStackRule? stackRule;
         public int maxStacks;
         public double resistanceCapPercent=-1d;
-        public bool removable=true,protectedEffect,normalCleanseEligible,actionDisabled;
-        public string dispelCategory;
+        public bool removable=true,protectedEffect,normalCleanseEligible,actionDisabled,removeOnDeath,removeOnBattleEnd;
+        public string refreshRule,snapshotPolicy,dispelCategory;
     }
 
     public sealed class CompiledSkill
@@ -59,7 +59,11 @@ namespace GuildAdventure.Game.Skills
                     compiled.protectedEffect=status.protected_effect;
                     compiled.normalCleanseEligible=status.normal_cleanse_eligible;
                     compiled.actionDisabled=status.action_disabled;
+                    compiled.refreshRule=status.refresh_rule;
+                    compiled.snapshotPolicy=status.snapshot_policy;
                     compiled.dispelCategory=status.dispel_category;
+                    compiled.removeOnDeath=status.remove_on_death;
+                    compiled.removeOnBattleEnd=status.remove_on_battle_end;
                 }
                 result.effects.Add(compiled);
             }
