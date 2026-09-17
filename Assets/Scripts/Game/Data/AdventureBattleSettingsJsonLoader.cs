@@ -11,12 +11,13 @@ namespace GuildAdventure.Game.Data
     [Serializable] public sealed class AdventureBattleFlow { public AdventureActionGauge action_gauge; }
     [Serializable] public sealed class AdventureActionGauge
     {
-        public double max;
-        public double ai_reevaluation_ratio;
-        public double successful_action_consume_ratio;
-        public double failed_execution_consume_ratio;
-        public double agi_gauge_coefficient=1d;
-        public double action_speed_multiplier=1d;
+        // Negative sentinels let JsonUtility distinguish omitted balance fields from explicit zero.
+        public double max=-1d;
+        public double ai_reevaluation_ratio=-1d;
+        public double successful_action_consume_ratio=-1d;
+        public double failed_execution_consume_ratio=-1d;
+        public double agi_gauge_coefficient=-1d;
+        public double action_speed_multiplier=-1d;
     }
 
     public static class AdventureBattleSettingsJsonLoader
