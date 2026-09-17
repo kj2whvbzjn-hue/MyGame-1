@@ -8,6 +8,8 @@ namespace GuildAdventure.Game.Battle
     [Serializable] public sealed class StatusMasterRow {
         public string id,name,status,description,stack_policy;
         public int max_stacks,duration;
+        public double resistance_cap_percent;
+        public bool removable=true,protected_effect,normal_cleanse_eligible,action_disabled;
         public string[] tags;
     }
 
@@ -23,6 +25,8 @@ namespace GuildAdventure.Game.Battle
             {
                 if(row==null||string.IsNullOrWhiteSpace(row.id)||row.status=="disabled")continue;
                 if(result.ContainsKey(row.id))throw new ArgumentException("STATUS_ID_DUPLICATE:"+row.id);
+                if(row.resistance_cap_percent<0)throw new ArgumentException("STATUS_RESISTANCE_CAP_INVALID:"+row.id);
+                if(row.max_stacks<0)throw new ArgumentException("STATUS_MAX_STACKS_INVALID:"+row.id);
                 result[row.id]=row;
             }
             return result;
