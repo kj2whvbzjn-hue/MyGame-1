@@ -10,7 +10,7 @@ namespace GuildAdventure.Tests.EditMode
  {
   [Test] public void ApplyEffect_UsesLifecycleValuesFromStatusMaster()
   {
-   const string statusJson="{\"schema_version\":\"1.0.0\",\"data\":[{\"id\":\"FUTURE_DOT\",\"status\":\"active\",\"lifecycle_kind\":\"DOT\",\"stack_policy\":\"STACK_SUM\",\"max_stacks\":3,\"resistance_cap_percent\":0,\"removable\":true,\"normal_cleanse_eligible\":false,\"action_disabled\":false}]}";
+   const string statusJson="{\"schema_version\":\"1.0.0\",\"data\":[{\"id\":\"FUTURE_DOT\",\"status\":\"active\",\"lifecycle_kind\":\"DOT\",\"stack_policy\":\"STACK_SUM\",\"refresh_rule\":\"KEEP\",\"snapshot_policy\":\"SNAPSHOT\",\"dispel_category\":\"DOT\",\"max_stacks\":3,\"resistance_cap_percent\":0,\"removable\":true,\"normal_cleanse_eligible\":false,\"action_disabled\":false,\"remove_on_death\":true,\"remove_on_battle_end\":true}]}";
    var statuses=StatusMasterLoader.Load(statusJson);
    var skill=new SkillExportRow{id="S",schemaVersion=1,target=new SkillTarget{side="ENEMY",range="SINGLE"},effects=new[]{new SkillEffect{type="APPLY",statusId="FUTURE_DOT",power=7,duration=4}}};
    var compiled=FormalSkillCompiler.Compile(skill,statuses).effects[0];
@@ -18,19 +18,24 @@ namespace GuildAdventure.Tests.EditMode
    Assert.AreEqual(EffectLifecycleKind.DOT,request.lifecycleKind);
    Assert.AreEqual(EffectStackRule.STACK_SUM,request.stackRule);
    Assert.AreEqual(3,request.maxStacks);
+   Assert.AreEqual("KEEP",request.refreshRule);
+   Assert.AreEqual("SNAPSHOT",request.snapshotPolicy);
+   Assert.AreEqual("DOT",request.dispelCategory);
    Assert.AreEqual(7,request.power,1e-9);
    Assert.AreEqual(4,request.durationTicks);
   }
 
   [Test] public void ApplyStatus_PropagatesResistanceAndCapabilityWithoutIdLogic()
   {
-   const string statusJson="{\"schema_version\":\"1.0.0\",\"data\":[{\"id\":\"FUTURE_DISABLE\",\"status\":\"active\",\"lifecycle_kind\":\"STATUS\",\"stack_policy\":\"UNIQUE_REFRESH\",\"max_stacks\":0,\"resistance_cap_percent\":50,\"removable\":true,\"normal_cleanse_eligible\":true,\"action_disabled\":true}]}";
+   const string statusJson="{\"schema_version\":\"1.0.0\",\"data\":[{\"id\":\"FUTURE_DISABLE\",\"status\":\"active\",\"lifecycle_kind\":\"STATUS\",\"stack_policy\":\"UNIQUE_REFRESH\",\"refresh_rule\":\"REFRESH\",\"snapshot_policy\":\"SNAPSHOT\",\"dispel_category\":\"STATUS\",\"max_stacks\":0,\"resistance_cap_percent\":50,\"removable\":true,\"normal_cleanse_eligible\":true,\"action_disabled\":true,\"remove_on_death\":true,\"remove_on_battle_end\":true}]}";
    var statuses=StatusMasterLoader.Load(statusJson);
    var skill=new SkillExportRow{id="S",schemaVersion=1,target=new SkillTarget{side="ENEMY",range="SINGLE"},effects=new[]{new SkillEffect{type="APPLY",statusId="FUTURE_DISABLE",duration=4}}};
    var compiled=FormalSkillCompiler.Compile(skill,statuses).effects[0];
    var request=FormalSkillEffectRuntimeBridge.BuildApplyRequest(compiled,"SRC","I1",80);
    Assert.AreEqual(50,request.statusResistanceCapPercent,1e-9);
    Assert.AreEqual(EffectStackRule.UNIQUE_REFRESH,request.stackRule);
+   Assert.AreEqual("REFRESH",request.refreshRule);
+   Assert.AreEqual("STATUS",request.dispelCategory);
    Assert.IsTrue(request.actionDisabled);
    Assert.IsTrue(request.normalCleanseEligible);
    var actor=new BattleActorSaveRecord{actorId="A",hp=10,maxHp=10,alive=true};
@@ -39,6 +44,7 @@ namespace GuildAdventure.Tests.EditMode
    Assert.IsTrue(applied.ok,applied.reason);
    Assert.AreEqual(2,applied.applied.remainingTicks);
    Assert.IsTrue(applied.applied.actionDisabled);
+   Assert.AreEqual("STATUS",applied.applied.dispelCategory);
   }
 
   [Test] public void ApplyEffect_RejectsUnknownStatusBeforeRuntime()
