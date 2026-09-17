@@ -6,17 +6,20 @@ namespace GuildAdventure.Tests.EditMode
 {
  public sealed class BattleTickPassiveRecoveryTests
  {
+  static readonly PassiveRuntimeSettings PassiveSettings=new PassiveRuntimeSettings{maxPassiveSlots=7,periodicRecoveryIntervalTicks=13};
+  static ActionGaugeSettings GaugeSettings()=>new ActionGaugeSettings{maxGauge=100,aiReevaluationRatio=.1,successfulActionConsumeRatio=1,failedExecutionConsumeRatio=.5,agiGaugeCoefficient=1,actionSpeedMultiplier=1};
   static BattleSnapshotSaveRecord Snapshot(int tick){var s=new BattleSnapshotSaveRecord{battleId="B",settingsVersion="S",seed="SEED",tick=tick};s.actors.Add(new BattleActorSaveRecord{actorId="A",hp=50,maxHp=100,mp=10,maxMp=50,speed=0,alive=true});s.fixedActorOrder.Add("A");return s;}
-  static PassiveCompileResult Passives()=>PassiveRuntime.Compile(new[]{new PassiveContribution{passiveId="P1",seriesId="S1",property=PassiveRuntime.PeriodicHpRecoveryPercent,value=10},new PassiveContribution{passiveId="P2",seriesId="S2",property=PassiveRuntime.PeriodicMpRecoveryPercent,value=20}});
+  static PassiveCompileResult Passives()=>PassiveRuntime.Compile(new[]{new PassiveContribution{passiveId="P1",seriesId="S1",property=PassiveRuntime.PeriodicHpRecoveryPercent,value=10},new PassiveContribution{passiveId="P2",seriesId="S2",property=PassiveRuntime.PeriodicMpRecoveryPercent,value=20}},PassiveSettings);
+  static BattleTickOptions Options()=>new BattleTickOptions{actionGaugeSettings=GaugeSettings(),passiveRuntimeSettings=PassiveSettings,resolvePassives=_=>Passives()};
 
-  [Test] public void Advance_AppliesPeriodicPassiveRecoveryBeforeCooldownAndGauge()
+  [Test] public void Advance_AppliesPeriodicPassiveRecoveryAtConfiguredBoundary()
   {
-   var s=Snapshot(20);var o=new BattleTickOptions{resolvePassives=_=>Passives()};var r=BattleTickRuntime.Advance(s,o);Assert.IsTrue(r.ok);Assert.AreEqual(60,s.actors[0].hp);Assert.AreEqual(20,s.actors[0].mp);Assert.AreEqual(20,r.passiveRecoveryAmount);CollectionAssert.AreEqual(new[]{"A:20"},r.passiveRecovered);
+   var s=Snapshot(13);var r=BattleTickRuntime.Advance(s,Options());Assert.IsTrue(r.ok);Assert.AreEqual(60,s.actors[0].hp);Assert.AreEqual(20,s.actors[0].mp);Assert.AreEqual(20,r.passiveRecoveryAmount);CollectionAssert.AreEqual(new[]{"A:20"},r.passiveRecovered);
   }
 
-  [Test] public void Advance_DoesNotRecoverOutsideTwentyTickBoundary()
+  [Test] public void Advance_DoesNotRecoverOutsideConfiguredBoundary()
   {
-   var s=Snapshot(19);var o=new BattleTickOptions{resolvePassives=_=>Passives()};var r=BattleTickRuntime.Advance(s,o);Assert.IsTrue(r.ok);Assert.AreEqual(50,s.actors[0].hp);Assert.AreEqual(10,s.actors[0].mp);Assert.AreEqual(0,r.passiveRecoveryAmount);Assert.AreEqual(0,r.passiveRecovered.Count);
+   var s=Snapshot(12);var r=BattleTickRuntime.Advance(s,Options());Assert.IsTrue(r.ok);Assert.AreEqual(50,s.actors[0].hp);Assert.AreEqual(10,s.actors[0].mp);Assert.AreEqual(0,r.passiveRecoveryAmount);Assert.AreEqual(0,r.passiveRecovered.Count);
   }
  }
 }
