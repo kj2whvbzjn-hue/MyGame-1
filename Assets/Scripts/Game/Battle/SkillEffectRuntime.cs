@@ -1,17 +1,47 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using GuildAdventure.Game.Save;
-using GuildAdventure.Game.Core;
 namespace GuildAdventure.Game.Battle
 {
- public enum SkillEffectKind{HEAL,APPLY,REMOVE,RESOURCE_CHANGE,REVIVE,TARGET_CONTROL}
- public enum TargetControlKind{COVER}
- public sealed class SkillEffectRequest{public SkillEffectKind kind;public string sourceId,effectId,instanceId,actionSourceId;public EffectLifecycleKind lifecycleKind;public int durationTicks,sequence,maxStacks;public double power,statusResistancePercent,statusResistanceCapPercent=-1d,magicIncreaseMultiplier=1d;public int hpDelta,mpDelta,reviveMp;public bool normalCleanse=true,removable=true,protectedEffect,normalCleanseEligible,actionDisabled;public Action<BattleActorSaveRecord> reviveEffect;public IEnumerable<TriggerRegistration> triggerRegistrations;public TriggerActionContext triggerActionContext;public IRandomSource passiveTriggerRng;public Action<ReactiveTriggerRequest> executeReactive;public TargetControlKind targetControlKind;public string protectorId;public CoverLifetimeKind coverLifetime=CoverLifetimeKind.PERSISTENT;public int coverUses,coverDurationTicks;public IList<CoverContract> coverContracts;}
- public sealed class SkillEffectResult{public bool ok;public string reason;public bool triggerOk=true;public string triggerReason;public int hpBefore,hpAfter,mpBefore,mpAfter;public AppliedEffectSaveRecord applied,removed;public BarrierLayerSaveRecord barrier;public ReviveResult revive;public CoverContract cover;public List<BattleTriggerDispatch> triggerDispatches=new List<BattleTriggerDispatch>();public int reactiveExecuted,reactiveSkipped;}
+ public enum SkillEffectKind { DAMAGE,HEAL,APPLY,REMOVE,TARGET_CONTROL,REVIVE }
+ public sealed class SkillEffectRequest
+ {
+  public SkillEffectKind kind;
+  public string sourceId,effectId,instanceId;
+  public EffectLifecycleKind lifecycleKind;
+  public EffectStackRule? stackRule;
+  public int durationTicks,appliedTick,sequence,maxStacks;
+  public double power,statusResistancePercent,statusResistanceCapPercent=-1d,magicIncreaseMultiplier=1d;
+  public bool normalCleanse=true,removable=true,protectedEffect,normalCleanseEligible,actionDisabled;
+  public TargetControlKind targetControlKind;
+  public int targetControlAmount;
+  public bool ignoreFrontlineRequirement;
+  public double reviveHpPercent;
+ }
+ public sealed class SkillEffectExecutionResult{public bool ok;public string reason;public int hpDelta,removedCount;public EffectApplyResult applied;public TargetControlResult targetControl;public ReviveResult revive;}
  public static class SkillEffectRuntime
  {
-  public static SkillEffectResult Execute(BattleSnapshotSaveRecord snapshot,BattleActorSaveRecord target,SkillEffectRequest r){if(snapshot==null||target==null||r==null)return Fail("SKILL_EFFECT_INPUT_INVALID");var wasAlive=target.alive&&target.hp>0;var result=new SkillEffectResult{ok=true,hpBefore=target.hp,mpBefore=target.mp};switch(r.kind){case SkillEffectKind.HEAL:if(!wasAlive)return Fail("SKILL_EFFECT_HEAL_TARGET_DEAD");target.hp=Math.Min(target.maxHp,target.hp+EffectLifecycleRuntime.HealAmount(target.maxHp,r.power,r.magicIncreaseMultiplier));break;case SkillEffectKind.APPLY:if(!wasAlive)return Fail("SKILL_EFFECT_APPLY_TARGET_DEAD");var request=new EffectApplyRequest{instanceId=r.instanceId,sourceId=r.sourceId,effectId=r.effectId,kind=r.lifecycleKind,baseDurationTicks=r.durationTicks,value=r.power,statusResistancePercent=r.statusResistancePercent,statusResistanceCapPercent=r.statusResistanceCapPercent,appliedTick=snapshot.tick,sequence=r.sequence,maxStacks=r.maxStacks,removable=r.removable,protectedEffect=r.protectedEffect,normalCleanseEligible=r.normalCleanseEligible,actionDisabled=r.actionDisabled};if(r.lifecycleKind==EffectLifecycleKind.BARRIER){var amount=EffectLifecycleRuntime.BarrierAmount(target.maxHp,r.power);var barrierApply=EffectLifecycleRuntime.ApplyBarrier(target,request,amount);if(!barrierApply.ok)return Fail(barrierApply.reason);result.applied=barrierApply.applied;result.barrier=target.barrierLayers.Find(x=>x.id==r.instanceId);break;}var applied=EffectLifecycleRuntime.Apply(target,request);if(!applied.ok)return Fail(applied.reason);result.applied=applied.applied;if(r.lifecycleKind==EffectLifecycleKind.STATUS)Dispatch(snapshot,target,r,result,TriggerEvent.ON_STATUS_APPLIED);break;case SkillEffectKind.REMOVE:if(!wasAlive)return Fail("SKILL_EFFECT_REMOVE_TARGET_DEAD");result.removed=EffectLifecycleRuntime.RemoveOldestStatus(target,r.effectId,r.normalCleanse);if(result.removed==null)return Fail("SKILL_EFFECT_REMOVE_NOT_FOUND");break;case SkillEffectKind.RESOURCE_CHANGE:if(!wasAlive)return Fail("SKILL_EFFECT_RESOURCE_TARGET_DEAD");target.hp=Math.Max(0,Math.Min(target.maxHp,target.hp+r.hpDelta));target.mp=Math.Max(0,Math.Min(target.maxMp,target.mp+r.mpDelta));target.alive=target.hp>0;break;case SkillEffectKind.REVIVE:if(wasAlive)return Fail("SKILL_EFFECT_REVIVE_TARGET_ALIVE");var reviveHp=EffectLifecycleRuntime.HealAmount(target.maxHp,r.power);result.revive=ReviveRuntime.Execute(snapshot,new ReviveRequest{targetId=target.actorId,hpAmount=reviveHp,mpAmount=r.reviveMp,reviveEffect=r.reviveEffect});if(!result.revive.ok)return Fail(result.revive.reason);break;case SkillEffectKind.TARGET_CONTROL:if(!wasAlive)return Fail("SKILL_EFFECT_TARGET_CONTROL_TARGET_DEAD");if(r.targetControlKind!=TargetControlKind.COVER)return Fail("SKILL_EFFECT_TARGET_CONTROL_UNSUPPORTED");if(r.coverContracts==null)return Fail("SKILL_EFFECT_COVER_STORE_MISSING");var protectorId=string.IsNullOrWhiteSpace(r.protectorId)?r.sourceId:r.protectorId;var protector=snapshot.actors.Find(x=>x.actorId==protectorId);if(protector==null||!protector.alive||protector.hp<=0)return Fail("SKILL_EFFECT_COVER_PROTECTOR_INVALID");if(protector.teamId!=target.teamId)return Fail("SKILL_EFFECT_COVER_TEAM_MISMATCH");if(r.coverLifetime==CoverLifetimeKind.USES&&r.coverUses<=0)return Fail("SKILL_EFFECT_COVER_USES_INVALID");if(r.coverLifetime==CoverLifetimeKind.DURATION&&r.coverDurationTicks<=0)return Fail("SKILL_EFFECT_COVER_DURATION_INVALID");var cover=new CoverContract{id=string.IsNullOrWhiteSpace(r.instanceId)?"COVER:"+snapshot.tick+":"+protectorId+":"+target.actorId:r.instanceId,protectorId=protectorId,protectedActorId=target.actorId,lifetime=r.coverLifetime,remainingUses=r.coverUses,remainingTicks=r.coverDurationTicks,active=true};r.coverContracts.Add(cover);result.cover=cover;break;default:return Fail("SKILL_EFFECT_KIND_UNSUPPORTED");}if(wasAlive&&(!target.alive||target.hp<=0))Dispatch(snapshot,target,r,result,TriggerEvent.ON_DEATH);result.hpAfter=target.hp;result.mpAfter=target.mp;return result;}
-  static void Dispatch(BattleSnapshotSaveRecord snapshot,BattleActorSaveRecord target,SkillEffectRequest r,SkillEffectResult result,TriggerEvent e){var action=r.triggerActionContext??new TriggerActionContext{actionId="EFFECT:"+snapshot.tick+":"+r.sourceId+":"+target.actorId};var d=BattleEffectLifecycle.DispatchEvent(e,r.sourceId,target.actorId,r.triggerRegistrations,BattleEffectLifecycle.BuildFixedOrder(snapshot),action.actionId,r.effectId,action,r.actionSourceId);result.triggerDispatches.Add(d);TriggerActivationRuntime.Enqueue(action,d);var drain=TriggerActivationRuntime.Drain(action,r.passiveTriggerRng,r.executeReactive);result.reactiveExecuted+=drain.executed;result.reactiveSkipped+=drain.skipped;if(!drain.ok){result.triggerOk=false;result.triggerReason=drain.reason;}}
-  static SkillEffectResult Fail(string reason)=>new SkillEffectResult{ok=false,reason=reason,triggerOk=true};
+  public static SkillEffectExecutionResult Execute(BattleActorSaveRecord target,SkillEffectRequest request,Func<int,int,int?> fatalResolver=null)
+  {
+   if(target==null||request==null)return Fail("SKILL_EFFECT_INPUT_INVALID");
+   switch(request.kind)
+   {
+    case SkillEffectKind.DAMAGE:
+     {var amount=Math.Max(0,(int)Math.Floor(request.power));var r=BattleDamageRuntime.Commit(target,amount,fatalResolver,true);return new SkillEffectExecutionResult{ok=true,hpDelta=-r.actualHpLoss};}
+    case SkillEffectKind.HEAL:
+     {if(!target.alive||target.hp<=0)return Fail("HEAL_TARGET_DEAD");var amount=EffectLifecycleRuntime.HealAmount(target.maxHp,request.power,request.magicIncreaseMultiplier);var before=target.hp;target.hp=Math.Min(target.maxHp,target.hp+amount);return new SkillEffectExecutionResult{ok=true,hpDelta=target.hp-before};}
+    case SkillEffectKind.APPLY:
+     {var a=EffectLifecycleRuntime.Apply(target,new EffectApplyRequest{instanceId=request.instanceId,sourceId=request.sourceId,effectId=request.effectId,kind=request.lifecycleKind,stackRule=request.stackRule,baseDurationTicks=request.durationTicks,value=request.power,statusResistancePercent=request.statusResistancePercent,statusResistanceCapPercent=request.statusResistanceCapPercent,appliedTick=request.appliedTick,sequence=request.sequence,maxStacks=request.maxStacks,removable=request.removable,protectedEffect=request.protectedEffect,normalCleanseEligible=request.normalCleanseEligible,actionDisabled=request.actionDisabled});return new SkillEffectExecutionResult{ok=a.ok,reason=a.reason,applied=a};}
+    case SkillEffectKind.REMOVE:
+     {var r=EffectLifecycleRuntime.RemoveStatus(target,1,false,request.effectId,request.normalCleanse);return new SkillEffectExecutionResult{ok=r.ok,reason=r.reason,removedCount=r.removedCount};}
+    case SkillEffectKind.TARGET_CONTROL:
+     {var r=ForcedMovementRuntime.Apply(target,request.targetControlKind,request.targetControlAmount);return new SkillEffectExecutionResult{ok=r.ok,reason=r.reason,targetControl=r};}
+    case SkillEffectKind.REVIVE:
+     {var r=ReviveRuntime.Revive(target,request.reviveHpPercent,request.ignoreFrontlineRequirement);return new SkillEffectExecutionResult{ok=r.ok,reason=r.reason,revive=r};}
+    default:return Fail("SKILL_EFFECT_KIND_UNKNOWN");
+   }
+  }
+  static SkillEffectExecutionResult Fail(string reason)=>new SkillEffectExecutionResult{ok=false,reason=reason};
  }
 }
