@@ -11,10 +11,10 @@ namespace GuildAdventure.Game.Battle
   {
    if(snapshot==null||request==null||string.IsNullOrWhiteSpace(request.targetId))return Fail("FORCED_MOVEMENT_INPUT_INVALID");
    var actor=snapshot.actors.FirstOrDefault(x=>x!=null&&x.actorId==request.targetId);if(actor==null)return Fail("FORCED_MOVEMENT_TARGET_MISSING");if(!actor.alive||actor.hp<=0)return Fail("FORCED_MOVEMENT_TARGET_DEAD");
-   if(request.canEstablish!=null&&!request.canEstablish(snapshot,actor,request.destinationFormationIndex))return new ForcedMovementResult{ok=true,reason="FORCED_MOVEMENT_NOT_ESTABLISHED",fromFormationIndex=actor.formationIndex,toFormationIndex=actor.formationIndex};
-   var result=new ForcedMovementResult{ok=true,established=true,fromFormationIndex=actor.formationIndex,toFormationIndex=request.destinationFormationIndex};
+   if(request.canEstablish!=null&&!request.canEstablish(snapshot,actor,request.destinationFormationIndex))return new ForcedMovementResult{ok=true,reason="FORCED_MOVEMENT_NOT_ESTABLISHED",fromFormationIndex=actor.formationRow,toFormationIndex=actor.formationRow};
+   var result=new ForcedMovementResult{ok=true,established=true,fromFormationIndex=actor.formationRow,toFormationIndex=request.destinationFormationIndex};
    if(actor.cast!=null&&actor.cast.active){var reservationId=actor.cast.reservationId;actor.cast.active=false;actor.cast.remainingTicks=0;if(snapshot.actionReservations!=null&&!string.IsNullOrWhiteSpace(reservationId))snapshot.actionReservations.RemoveAll(x=>x!=null&&x.reservationId==reservationId);result.castInterrupted=true;}
-   actor.formationIndex=request.destinationFormationIndex;result.moved=true;
+   actor.formationRow=request.destinationFormationIndex;result.moved=true;
    request.updateRangeAndTargets?.Invoke(snapshot,actor);result.rangeAndTargetsUpdated=request.updateRangeAndTargets!=null;
    request.requestAiReevaluation?.Invoke(snapshot,actor);result.aiReevaluationRequested=request.requestAiReevaluation!=null;
    return result;
