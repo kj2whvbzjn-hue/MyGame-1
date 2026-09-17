@@ -55,10 +55,11 @@ namespace GuildAdventure.Tests.EditMode
 
         [Test] public void PassiveProperty_UsesCompiledContributions()
         {
+            var settings=new PassiveRuntimeSettings{maxPassiveSlots=4,periodicRecoveryIntervalTicks=10};
             var v=BattleEffectLifecycle.PassiveProperty(new[]{
-                new PassiveContribution{passiveId="P1",property="ACTION_GAUGE_GAIN",value=2},
-                new PassiveContribution{passiveId="P2",property="ACTION_GAUGE_GAIN",value=3}
-            },"ACTION_GAUGE_GAIN");
+                new PassiveContribution{passiveId="P1",seriesId="S1",property="ACTION_GAUGE_GAIN",value=2},
+                new PassiveContribution{passiveId="P2",seriesId="S2",property="ACTION_GAUGE_GAIN",value=3}
+            },"ACTION_GAUGE_GAIN",settings);
             Assert.AreEqual(5,v);
         }
     }
