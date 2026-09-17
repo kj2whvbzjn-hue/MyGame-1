@@ -22,7 +22,7 @@ namespace GuildAdventure.Game.Save
         {
             if(a==null)throw new ArgumentNullException(nameof(a));
             return new RestoredBattleActor{
-                gauge=new ActionGaugeState{actorId=a.actorId,gauge=a.actionGauge,speed=a.speed,alive=a.alive,casting=a.cast!=null&&a.cast.active},
+                gauge=new ActionGaugeState{actorId=a.actorId,gauge=a.actionGauge,agi=a.speed,alive=a.alive,casting=a.cast!=null&&a.cast.active},
                 resources=new SkillActorState{actorId=a.actorId,hp=a.hp,maxHp=a.maxHp,mp=a.mp,maxMp=a.maxMp,alive=a.alive},
                 cast=a.cast==null?null:new CastState{actorId=a.actorId,skillId=a.cast.skillId,targetId=a.cast.targetId,remainingTicks=a.cast.remainingTicks,active=a.cast.active},
                 cooldowns=(a.cooldowns??new List<CooldownSaveRecord>()).Select(x=>new CooldownSaveRecord{skillId=x.skillId,remainingTicks=x.remainingTicks}).ToList(),
