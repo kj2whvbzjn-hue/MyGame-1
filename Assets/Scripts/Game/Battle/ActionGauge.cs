@@ -15,12 +15,13 @@ namespace GuildAdventure.Game.Battle
     [Serializable]
     public sealed class ActionGaugeSettings
     {
-        public double maxGauge=100d;
-        public double aiReevaluationRatio=0.10d;
-        public double successfulActionConsumeRatio=1.00d;
-        public double failedExecutionConsumeRatio=0.50d;
-        public double agiGaugeCoefficient=1.0d;
-        public double actionSpeedMultiplier=1.0d;
+        // Balance values are supplied by Export/settings. Negative sentinels mean "not supplied".
+        public double maxGauge=-1d;
+        public double aiReevaluationRatio=-1d;
+        public double successfulActionConsumeRatio=-1d;
+        public double failedExecutionConsumeRatio=-1d;
+        public double agiGaugeCoefficient=-1d;
+        public double actionSpeedMultiplier=-1d;
 
         public string Validate()
         {
@@ -40,7 +41,7 @@ namespace GuildAdventure.Game.Battle
 
     public static class ActionGauge
     {
-        // GS-14 v1.1: base gain per Tick = (100 + AGI) / 10.
+        // GS-14 v1.1 defines the base formula itself: (100 + AGI) / 10.
         public static double BaseGainPerTick(double agi)
             => (100d+Math.Max(0d,agi))/10d;
 
@@ -49,8 +50,6 @@ namespace GuildAdventure.Game.Battle
             if(settings==null)throw new ArgumentNullException(nameof(settings));
             var error=settings.Validate();
             if(error!=null)throw new ArgumentException(error,nameof(settings));
-
-            // ACTION_GAUGE_GAIN is a contribution to the gain. AGI itself is not rewritten by speed buffs.
             var baseGain=BaseGainPerTick(agi)*settings.agiGaugeCoefficient*settings.actionSpeedMultiplier;
             return Math.Max(0d,baseGain+actionGaugeGainContribution);
         }
@@ -62,10 +61,7 @@ namespace GuildAdventure.Game.Battle
             var error=settings.Validate();
             if(error!=null)throw new ArgumentException(error,nameof(settings));
             if(!state.alive||state.casting)return;
-
-            state.gauge=Math.Min(
-                settings.maxGauge,
-                Math.Max(0d,state.gauge)+GainPerTick(state.agi,settings,actionGaugeGainContribution));
+            state.gauge=Math.Min(settings.maxGauge,Math.Max(0d,state.gauge)+GainPerTick(state.agi,settings,actionGaugeGainContribution));
         }
 
         public static bool IsReady(ActionGaugeState state,ActionGaugeSettings settings)
