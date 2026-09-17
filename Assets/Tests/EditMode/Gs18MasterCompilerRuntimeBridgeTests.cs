@@ -2,6 +2,7 @@
 using NUnit.Framework;
 using GuildAdventure.Game.Battle;
 using GuildAdventure.Game.Skills;
+using GuildAdventure.Game.Save;
 
 namespace GuildAdventure.Tests.EditMode
 {
@@ -32,11 +33,12 @@ namespace GuildAdventure.Tests.EditMode
    Assert.AreEqual(EffectStackRule.UNIQUE_REFRESH,request.stackRule);
    Assert.IsTrue(request.actionDisabled);
    Assert.IsTrue(request.normalCleanseEligible);
-   var actor=new GuildAdventure.Game.Save.BattleActorSaveRecord{actorId="A",hp=10,maxHp=10,alive=true};
-   var applied=SkillEffectRuntime.Execute(actor,request);
+   var actor=new BattleActorSaveRecord{actorId="A",hp=10,maxHp=10,alive=true};
+   var snapshot=new BattleSnapshotSaveRecord{battleId="B",settingsVersion="S",seed="1"};snapshot.actors.Add(actor);snapshot.fixedActorOrder.Add("A");
+   var applied=SkillEffectRuntime.Execute(snapshot,actor,request);
    Assert.IsTrue(applied.ok,applied.reason);
-   Assert.AreEqual(2,applied.applied.effectiveDurationTicks);
-   Assert.IsTrue(applied.applied.applied.actionDisabled);
+   Assert.AreEqual(2,applied.applied.remainingTicks);
+   Assert.IsTrue(applied.applied.actionDisabled);
   }
 
   [Test] public void ApplyEffect_RejectsUnknownStatusBeforeRuntime()
@@ -48,7 +50,7 @@ namespace GuildAdventure.Tests.EditMode
 
   [Test] public void Runtime_RejectsMissingStackRuleInsteadOfInferringFromKind()
   {
-   var actor=new GuildAdventure.Game.Save.BattleActorSaveRecord{actorId="A",hp=10,maxHp=10,alive=true};
+   var actor=new BattleActorSaveRecord{actorId="A",hp=10,maxHp=10,alive=true};
    var r=EffectLifecycleRuntime.Apply(actor,new EffectApplyRequest{instanceId="I",sourceId="SRC",effectId="FUTURE_DOT",kind=EffectLifecycleKind.DOT,baseDurationTicks=4,maxStacks=3});
    Assert.IsFalse(r.ok);
    Assert.AreEqual("EFFECT_STACK_RULE_MISSING",r.reason);
