@@ -9,7 +9,7 @@ namespace GuildAdventure.Game.Battle
         public string id,name,status,description,lifecycle_kind,stack_policy,refresh_rule,snapshot_policy,dispel_category;
         public int max_stacks,duration;
         public double resistance_cap_percent=-1d;
-        public bool removable=true,protected_effect,normal_cleanse_eligible,action_disabled,remove_on_death,remove_on_battle_end;
+        public bool removable=true,protected_effect,normal_cleanse_eligible,action_disabled,remove_on_death=true,remove_on_battle_end=true;
         public string[] tags;
     }
 
