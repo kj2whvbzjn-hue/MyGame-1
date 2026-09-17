@@ -8,8 +8,9 @@ namespace GuildAdventure.Tests.EditMode
  public sealed class BattleStepLowHpPassiveTests
  {
   sealed class FixedRng:IRandomSource{readonly double v;public FixedRng(double x){v=x;}public double Next01(string purpose)=>v;}
+  static readonly PassiveRuntimeSettings PassiveSettings=new PassiveRuntimeSettings{maxPassiveSlots=7,periodicRecoveryIntervalTicks=13};
   static BattleSnapshotSaveRecord Snapshot(int sourceHp,int targetHp){var s=new BattleSnapshotSaveRecord{battleId="B",settingsVersion="S",seed="SEED"};s.actors.Add(new BattleActorSaveRecord{actorId="A",hp=sourceHp,maxHp=100,mp=0,maxMp=0,alive=true});s.actors.Add(new BattleActorSaveRecord{actorId="B",hp=targetHp,maxHp=100,mp=0,maxMp=0,alive=true});s.fixedActorOrder.Add("A");s.fixedActorOrder.Add("B");return s;}
-  static PassiveCompileResult Low(string series,string property,double value)=>PassiveRuntime.Compile(new[]{new PassiveContribution{passiveId="T",seriesId=series,property=PassiveRuntime.LowHpThresholdPercent,value=30},new PassiveContribution{passiveId="P",seriesId=series+"2",property=property,value=value}});
+  static PassiveCompileResult Low(string series,string property,double value)=>PassiveRuntime.Compile(new[]{new PassiveContribution{passiveId="T",seriesId=series,property=PassiveRuntime.LowHpThresholdPercent,value=30},new PassiveContribution{passiveId="P",seriesId=series+"2",property=property,value=value}},PassiveSettings);
   static BattleAttackProposal Proposal(PassiveCompileResult source=null,PassiveCompileResult target=null)=>new BattleAttackProposal{reservationId="R",sourceId="A",targetId="B",skillId="S",hitCount=1,damageType=DamageType.Physical,criticalRatePercent=0,accuracy=100,evasion=0,baseDamage=40,damageResistance=0,sourcePassives=source,targetPassives=target};
 
   [Test] public void LowHpAttackBoost_IncreasesCommittedDamage()
